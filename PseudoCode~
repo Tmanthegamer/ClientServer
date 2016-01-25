@@ -1,0 +1,22 @@
+struct Client {
+	pid_t id;
+	short cur_priority;
+	short def_priority;
+	void ClientTask();
+} Client;
+
+Update Priorities(struct Client[] Clients)
+	short cur_max = 0;
+	for each (Client in Clients) //for each client
+		if(Client->cur_priority == 5)
+			cur_max == 5;			
+			break;
+		else if(cur_max < Client->cur_priority)
+			cur_max = Client->cur_priority
+	for(Client in Clients) //for each client
+		if(cur_priority == cur_max)
+			Client->ClientTask()			
+			reset cur_priority to def_priority
+		else
+			cur_priority = cur_priority + 1
+			
