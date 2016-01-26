@@ -5,18 +5,19 @@ struct Client {
 	void ClientTask();
 } Client;
 
-Update Priorities(struct Client[] Clients)
+UpdatePriorities(struct Client[] Clients)
 	short cur_max = 0;
-	for each (Client in Clients) //for each client
+	foreach (Client in Clients)
 		if(Client->cur_priority == 5)
 			cur_max == 5;			
 			break;
 		else if(cur_max < Client->cur_priority)
 			cur_max = Client->cur_priority
-	for(Client in Clients) //for each client
+	foreach (Client in Clients)
 		if(cur_priority == cur_max)
 			Client->ClientTask()			
 			reset cur_priority to def_priority
 		else
 			cur_priority = cur_priority + 1
-			
+	//end of foreach
+//End of UpdatePriorities
