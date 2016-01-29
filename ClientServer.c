@@ -39,13 +39,14 @@ int main(int argc, char **argv)
             printf("Fatal error.\n");
             break;
         case 0: //child
+            
+            // I NEED A MUTEX HERE SO COPYING DOESN'T GO WRONG
             childRCV = malloc(sizeof(Mesg));
             sprintf(childRCV->mesg_data, "%s", rcv->mesg_data);
             childRCV->mesg_len = rcv->mesg_len;
             childRCV->mesg_type = rcv->mesg_type;
 
-            //printf("%s>>>>>>\n", childRCV->mesg_data);
-            ProcessClient(childRCV, msgQueue, 0, 10);
+            ProcessClient(rcv, msgQueue, 0, 10);
             free(childRCV);
             exit(1);
             break;
