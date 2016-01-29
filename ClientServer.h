@@ -12,9 +12,9 @@
 
 #define MSGPERM 0666    // msg queue permission
 
-int ReadMessage(int, Mesg*, size_t, long, int);
+int ReadMessage(int queue, Mesg* msg, long msg_type);
 
-int SendMessage(int, Mesg*, int, int);
+int SendMessage(int queue, long type, char* data);
 
 int RemoveQueue(int);
 
@@ -28,12 +28,11 @@ int SearchForClients(void);
 
 int CreateNewClient(void);
 
-int ProcessClient(void);
+int ProcessClient(Mesg* msg, int priority, long PID, int queue);
 
-int DesignatePriority(void);
+FILE* OpenFile(const char* fileName);
 
-int OpenFile(void);
-
-int PacketizeData(void);
-
-
+int PacketizeData(FILE* fp, 
+	              const int queue, 
+	              const long msg_type, 
+	              const int priority);
