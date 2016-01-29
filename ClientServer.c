@@ -6,15 +6,14 @@ int done;
 
 int main(int argc, char **argv)
 {
-    FILE* file;
-
     int msgQueue;
     int i = 0;
-    key_t key1;
+    key_t key;
     Mesg* rcv;
+    Mesg* childRCV;
 
-    key1 = ftok("Info", 'a');
-    msgQueue = msgget(key1, 0666|IPC_CREAT|IPC_EXCL);
+    key = ftok("Info", 'a');
+    msgQueue = msgget(key, 0666|IPC_CREAT|IPC_EXCL);
     if (msgQueue < 0) {
         perror(strerror(errno));
         return 1;
@@ -30,14 +29,36 @@ int main(int argc, char **argv)
     if(rcv == NULL)
         return 1;
 
-    if(ReadMessage(msgQueue, rcv, i) < 0)
+    if(ReadMessage(msgQueue, rcv, i) == 0)
     {
-        printf("ReadMessage");
-        RemoveQueue(msgQueue);
-        free(rcv);
-        return 1;
+        pid_t child;
+        child = fork();
+        switch(child)
+        {
+        case -1:
+            printf("Fatal error.\n");
+            break;
+        case 0: //child
+            childRCV = malloc(sizeof(Mesg));
+            sprintf(childRCV->mesg_data, "%s", rcv->mesg_data);
+            childRCV->mesg_len = rcv->mesg_len;
+            childRCV->mesg_type = rcv->mesg_type;
+
+            //printf("%s>>>>>>\n", childRCV->mesg_data);
+            ProcessClient(childRCV, msgQueue, 0, 10);
+            free(childRCV);
+            exit(1);
+            break;
+
+        default: //parent
+            printf("Parent is outta here.\n");
+        }
+        
     }
 
+    
+
+    #if 0
     if((file = OpenFile(rcv->mesg_data)) == NULL)
     {
         printf("Cannot open file.\n");
@@ -51,7 +72,8 @@ int main(int argc, char **argv)
     {
         PacketizeData(file, 0, 0, 5);
     }
-    
+    #endif
+    printf("Killed message.\n");
     free(rcv);
     RemoveQueue(msgQueue);
     return 0;
@@ -165,9 +187,24 @@ int CreateNewClient(void)
     return 0;
 }
 
-int ProcessClient(Mesg* msg, int priority, long PID, int queue)
+int ProcessClient(Mesg* msg, int queue, long PID, int priority)
 {
     FILE* file;
+    if((file = OpenFile(msg->mesg_data)) == NULL)
+    {
+        printf("Cannot open file.\n");
+        /*
+        Failure: File cannot be opened for reading
+            Send “Error: Cannot open file” message to SEND MESSAGE
+            Goto SEND MESSAGE
+        */
+        return -1;
+    }
+    else 
+    {
+        PacketizeData(file, queue, PID, priority);
+    }
+
     /*
     Grab received message
     Get Client’s Priority and PID
@@ -192,9 +229,17 @@ int PacketizeData(FILE* fp,
                   const long msg_type, 
                   const int priority)
 {
-    const int m_size = 4096 / priority;
+    int m_size = MAXMESSAGEDATA;
     char buf[m_size+1];
     int count = 0;
+
+    // Priority is organized by dividing the message by its priority number.
+    if (priority < 0)
+        m_size = 1;
+    else if (priority > 10)
+        m_size = 10;
+    else 
+        m_size = MAXMESSAGEDATA / priority;
 
     while(fgets(buf, m_size, fp) != NULL)
     {
@@ -208,7 +253,6 @@ int PacketizeData(FILE* fp,
         Restart loop
         */
     }
-
     fclose(fp);
 
     return 0;
