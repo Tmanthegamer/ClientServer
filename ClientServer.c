@@ -295,10 +295,13 @@ int PacketizeData(FILE* fp,
                   const long msg_type,
                   const int priority)
 {
-
+    Mesg snd;
     int m_size = MAXMESSAGEDATA;
     char buf[m_size+1];
-    //int count = 0;
+    int count = 0;
+
+    snd.mesg_type = msg_type;
+    snd.mesg_len = 20;
 
     // Priority is organized by dividing the message by its priority number.
     if (priority < 0)
@@ -308,11 +311,13 @@ int PacketizeData(FILE* fp,
     else
         m_size = MAXMESSAGEDATA / priority;
 
-
-
     while(fgets(buf, m_size, fp) != NULL)
     {
-
+        sprintf(snd.mesg_data, buf);
+        count++;
+        if(SendMessage(queue, &snd) < 0){
+            printf("Error in PacketizeData, SendMessage fail\n");
+        }
         //printf("<Portion: %d>\n\n%s", count++, buf);
         /*
         Send the portion of the message to SEND MESSAGES
@@ -323,10 +328,12 @@ int PacketizeData(FILE* fp,
         Restart loop
         */
     }
-    if (queue || msg_type){
 
+    printf("Done packetizing <%d>\n", count);
+    sprintf(snd.mesg_data, "done");
+    if(SendMessage(queue, &snd) < 0){
+        printf("Error in ending msg, SendMessage fail\n");
     }
-    printf("Done packetizing\n");
     fclose(fp);
 
     return 0;

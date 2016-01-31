@@ -40,9 +40,17 @@ int Client(void)
     Mesg rcv;
 
 
-    /*if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0){
-        printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
-    }*/
+    printf("%s\n", "Waiting for server...");
+    while(1)
+    {
+        if(ReadMessage(msgQueue, &rcv, SERVER_TO_ALL_CLIENTS) == 0){
+            if(strstr(rcv.mesg_data, "done") != 0) {
+                break;
+            }
+            //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+            printf("%s", rcv.mesg_data);
+        }
+    }
 
     return 0;
 }
