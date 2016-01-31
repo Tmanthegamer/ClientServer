@@ -1,35 +1,55 @@
 #include "ClientServer.h"
-     
+
 extern int errno;       // error NO.
-int msgqid, rc;
+int msgQueue, rc;
 int done;
 
 int main(int argc, char **argv)
 {
-    int msgQueue;
-    int i = 0;
+    struct sigaction sa;
+  	struct sigaction oldint;
+
+    sa.sa_handler = sig_handler;
+  	sigemptyset (&sa.sa_mask);
+  	sa.sa_flags = 0;
+
+    sigaction (SIGINT, &sa, &oldint);
+  	sigaction (SIGTSTP, &sa, NULL);
+
+    Server();
+
+    // Restore normal action
+    sigaction (SIGINT, &oldint, NULL);
+
+    #if 0
+    long i = 5;
     key_t key;
-    Mesg* rcv;
-    Mesg* childRCV;
+    Mesg snd;
+    Mesg rcv;
+    Mesg childRCV;
 
     key = ftok("Info", 'a');
-    msgQueue = msgget(key, 0666|IPC_CREAT|IPC_EXCL);
+    msgQueue = msgget(key, 0644|IPC_CREAT|IPC_EXCL);
+
     if (msgQueue < 0) {
         perror(strerror(errno));
         return 1;
     }
 
-    if(SendMessage(msgQueue, i, argv[1]) < 0) {
+    sprintf(snd.mesg_data, "nope");
+    snd.mesg_type = i;
+    snd.mesg_len = 20;
+    printf("{{%s}}\n", snd.mesg_data);
+    if(SendMessage(msgQueue, &snd) < 0)
+    {
         printf("SendMessage");
         RemoveQueue(msgQueue);
         return 1;
     }
 
-    rcv = malloc(sizeof(Mesg));
-    if(rcv == NULL)
-        return 1;
-
-    if(ReadMessage(msgQueue, rcv, i) == 0)
+    if(ReadMessage(msgQueue, &rcv, i) == 0)
+    //rc = msgrcv(msgQueue,&rcv,sizeof(rcv.mesg_data),i,IPC_NOWAIT);
+    //if(rc >= 0)
     {
         pid_t child;
         child = fork();
@@ -39,53 +59,38 @@ int main(int argc, char **argv)
             printf("Fatal error.\n");
             break;
         case 0: //child
-            
-            // I NEED A MUTEX HERE SO COPYING DOESN'T GO WRONG
-            childRCV = malloc(sizeof(Mesg));
-            sprintf(childRCV->mesg_data, "%s", rcv->mesg_data);
-            childRCV->mesg_len = rcv->mesg_len;
-            childRCV->mesg_type = rcv->mesg_type;
 
-            ProcessClient(rcv, msgQueue, 0, 10);
-            free(childRCV);
+            // I NEED A MUTEX HERE SO COPYING DOESN'T GO WRONG
+            sprintf(childRCV.mesg_data, "%s", rcv.mesg_data);
+            childRCV.mesg_len = rcv.mesg_len;
+            childRCV.mesg_type = rcv.mesg_type;
+
+            ProcessClient(&rcv, msgQueue, 0, 10);
             exit(1);
             break;
 
         default: //parent
             printf("Parent is outta here.\n");
         }
-        
+
+    } else {
+        perror( strerror(errno) );
     }
 
-    
-
-    #if 0
-    if((file = OpenFile(rcv->mesg_data)) == NULL)
-    {
-        printf("Cannot open file.\n");
-        /*
-        Failure: File cannot be opened for reading
-            Send “Error: Cannot open file” message to SEND MESSAGE
-            Goto SEND MESSAGE
-        */
-    }
-    else 
-    {
-        PacketizeData(file, 0, 0, 5);
-    }
-    #endif
     printf("Killed message.\n");
-    free(rcv);
     RemoveQueue(msgQueue);
+    #endif
+
     return 0;
 }
 
 int ReadMessage(int queue, Mesg* msg, long msg_type)
 {
-    if( (rc = msgrcv(queue, &msg, sizeof(msg), msg_type, IPC_NOWAIT)) < 0) 
+    rc = msgrcv(queue,msg,sizeof(msg->mesg_data),msg_type,IPC_NOWAIT);
+    if(rc < 0)
     {
-        perror( strerror(errno) );
-        printf("msgrcv failed, rc=%d\n", rc);
+        //perror( strerror(errno) );
+        //printf("msgrcv failed, rc=%d\n", rc);
         return -1;
     }
     //printf("[Read]<%s>\n", msg->mesg_data);
@@ -93,30 +98,23 @@ int ReadMessage(int queue, Mesg* msg, long msg_type)
     return 0;
 }
 
-int SendMessage(int queue, long type, char* data)
+int SendMessage(int queue, Mesg* msg)
 {
-    Mesg* msg = malloc(sizeof(Mesg));
-    if(msg == NULL)
-        return -1;
-    // message to send
-    msg->mesg_type = type; // client who sent the message
-    sprintf(msg->mesg_data, "%s", data);
-    msg->mesg_len = sizeof(msg->mesg_data);
-    
-    rc = msgsnd(queue, &msg, sizeof(msg), IPC_NOWAIT);
-    free(msg);
+    printf("queue:%d\n", msgQueue);
+    printf("[%s][%d][%ld]", msg->mesg_data, msg->mesg_len, msg->mesg_type);
+    rc = msgsnd(msgQueue,msg,sizeof(msg->mesg_data),IPC_NOWAIT);
 
-    if (rc < 0) 
+    if (rc < 0)
     {
         return -1;
     }
-    
+
     return 0;
     /*
     Grab assigned PID to indicate message type (destination of message)
     Grab the message queue
     Grab the message
-    Grab the “more” flag to indicate more messages  
+    Grab the “more” flag to indicate more messages
     Send message to the message queue using the message type as its address.
     IF “more” flag has been specified
         Return to PACKETIZE DATA (restart its file read loop)
@@ -127,7 +125,7 @@ int SendMessage(int queue, long type, char* data)
 int RemoveQueue(int queue)
 {
     int rc;
-    if (( rc= msgctl(queue, IPC_RMID, NULL) ) < 0) 
+    if (( rc= msgctl(queue, IPC_RMID, NULL) ) < 0)
     {
         perror( strerror(errno) );
         printf("msgctl (return queue) failed, rc=%d\n", rc);
@@ -151,6 +149,21 @@ int ParseCommandLine(void)
 
 int Server(void)
 {
+  key_t key;
+
+  key = ftok("Info", 'a');
+  msgQueue = msgget(key, 0644|IPC_CREAT|IPC_EXCL);
+  printf("Queue:%d\n", msgQueue);
+  //msgQueue = msgget(IPC_PRIVATE,IPC_CREAT|IPC_EXCL);
+
+  if (msgQueue < 0) {
+      perror(strerror(errno));
+      return 1;
+  }
+
+  SearchForClients();
+
+  RemoveQueue(msgQueue);
     /*
     Create ClientServer msg queue
     Assign Message-Type 1 to be the messages designated Client to Server
@@ -161,6 +174,50 @@ int Server(void)
 
 int SearchForClients(void)
 {
+    long type = 1;
+    Mesg snd;
+    sprintf(snd.mesg_data, "nope5 10");
+    snd.mesg_type = type;
+    snd.mesg_len = 20;
+    printf("{{%s}}\n", snd.mesg_data);
+    if(SendMessage(msgQueue, &snd) < 0)
+    {
+      printf("SendMessage\n");
+      RemoveQueue(msgQueue);
+      return 1;
+    }
+
+    Mesg rcv;
+    int priority = 0;
+
+    //while (1){
+    if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
+    {
+        priority = DesignatePriority(rcv.mesg_data);
+        #if 0
+        DesignatePriority(rcv.mesg_data);
+        pid_t child;
+        child = fork();
+        switch(child)
+        {
+        case -1:
+            printf("Fatal error.\n");
+            break;
+        case 0: //child
+            ProcessClient(&rcv, msgQueue, SERVER_TO_ALL_CLIENTS, 10);
+            exit(1);
+            break;
+
+        default: //parent
+            //No action to be taken for the parent
+            break;
+        }
+        #endif
+    }
+    //}
+
+
+    printf("Killed SearchForClients.\n");
     /*
     Check for any incoming messages from clients.
     Failure no new messages: RESTART SEARCH FOR CLIENTS
@@ -172,6 +229,7 @@ int SearchForClients(void)
 
 int CreateNewClient(void)
 {
+
     /*
     Check message data for client’s PID
     Check message for client‘s priority
@@ -201,7 +259,7 @@ int ProcessClient(Mesg* msg, int queue, long PID, int priority)
         */
         return -1;
     }
-    else 
+    else
     {
         PacketizeData(file, queue, PID, priority);
     }
@@ -221,13 +279,24 @@ FILE* OpenFile(const char* fileName)
 
     fp = fopen(fileName, "r"); // read file
     //fclose(fp);
-    
+
     return fp;
 }
 
-int PacketizeData(FILE* fp, 
-                  const int queue, 
-                  const long msg_type, 
+int DesignatePriority(const char* text)
+{
+    int priority;
+    char trash[5000] = {'\0'};
+    int n = sscanf(text, "%s %d", trash, &priority);
+    if(n == 2){
+        return priority;
+    }
+    return -1;
+}
+
+int PacketizeData(FILE* fp,
+                  const int queue,
+                  const long msg_type,
                   const int priority)
 {
     int m_size = MAXMESSAGEDATA;
@@ -239,12 +308,12 @@ int PacketizeData(FILE* fp,
         m_size = 1;
     else if (priority > 10)
         m_size = 10;
-    else 
+    else
         m_size = MAXMESSAGEDATA / priority;
 
     while(fgets(buf, m_size, fp) != NULL)
     {
-        printf("<Portion: %d>\n\n%s", count++, buf);
+        //printf("<Portion: %d>\n\n%s", count++, buf);
         /*
         Send the portion of the message to SEND MESSAGES
         Send the PID to SEND MESSAGES
@@ -254,7 +323,21 @@ int PacketizeData(FILE* fp,
         Restart loop
         */
     }
+    printf("Done packetizing\n");
     fclose(fp);
 
     return 0;
+}
+
+/* Simple signal handler */
+void sig_handler(int sig)
+{
+    RemoveQueue(msgQueue);
+    printf("Removed queue\n");
+    fflush(stdout);
+    /*
+    ADD IN MORE CLEAN UP DUTIES HERE.
+    */
+
+    exit(1);
 }
