@@ -40,4 +40,4 @@ typedef struct
 	long mesg_type; /* message type */
 	size_t mesg_len; /* #bytes in mesg_data */
 	char mesg_data[MAXMESSAGEDATA];
-}
+} Mesg;

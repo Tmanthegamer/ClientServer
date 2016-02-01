@@ -77,10 +77,15 @@ int ReadMessage(int queue, Mesg* msg, long msg_type)
     return 0;
 }
 
+int ReadAllMessages(int queue, Mesg* msg, long msg_type)
+{
+    return 0;
+}
+
 int SendMessage(int queue, Mesg* msg)
 {
-    msg->mesg_len = sizeof(msg->mesg_data);
-    rc = msgsnd(queue,msg,sizeof(msg->mesg_data),IPC_NOWAIT);
+    msg->mesg_len = strlen(msg->mesg_data);
+    rc = msgsnd(queue, msg, sizeof(msg->mesg_data), 0);
 
     if (rc < 0)
     {
@@ -183,7 +188,6 @@ int SearchForClients(void)
 
     strcpy(snd.mesg_data, "nope5 10");
     snd.mesg_type = CLIENT_TO_SERVER;
-    snd.mesg_len = 20;
 
     if(SendMessage(msgQueue, &snd) < 0)
     {
@@ -191,37 +195,37 @@ int SearchForClients(void)
       //RemoveQueue(msgQueue);
       return 1;
     }
-    printf("[SEND: len=%d]\n", snd.mesg_len);
+    printf("[SEND: len=%zu]\n", snd.mesg_len);
     #endif
     Mesg rcv;
 
-    //while (1){
-    if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
-    {
-
-        //mesg_len doesn't work
-        printf("normal:[msg:%s][len:%d][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
-        pid_t child;
-        child = fork();
-        switch(child)
+    while (1){
+        if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
         {
-        case -1:
-            printf("Fatal error.\n");
-            break;
-        case 0: //child
 
-            //ProcessClient(&rcv, msgQueue);
-            exit(1);
-            break;
+            //mesg_len doesn't work
+            printf("normal:[msg:%s][len:%zu][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+            pid_t child;
+            child = fork();
+            switch(child)
+            {
+            case -1:
+                printf("Fatal error.\n");
+                break;
+            case 0: //child
 
-        default: //parent
-            //No action to be taken for the parent
-            break;
+                ProcessClient(&rcv, msgQueue);
+                exit(1);
+                break;
+
+            default: //parent
+                //No action to be taken for the parent
+                break;
+            }
+
         }
 
     }
-
-    //}
 
 
     printf("Killed SearchForClients.\n");
@@ -260,11 +264,13 @@ int ProcessClient(Mesg* msg, int queue)
     pid_t client;
     int priority;
 
+    printf("ProcessClient\n");
     if(DesignatePriority(msg->mesg_data, name, &priority, &client) < 0)
     {
         printf("error");
     }
 
+    printf("Opening file.\n");
     if((file = OpenFile(name)) == NULL)
     {
         printf("Cannot open file.\n");
@@ -339,7 +345,9 @@ int PacketizeData(FILE* fp,
 
     snd.mesg_type = msg_type;
     // Priority is organized by dividing the message by its priority number.
+    printf("PacketizeData.\n");
 
+    for()
 
     //don't use fgets, copy each char individually until the limit is filled.
     while(fgets(buf, m_size, fp) != NULL)
@@ -362,8 +370,8 @@ int PacketizeData(FILE* fp,
     }
 
     printf("Done packetizing <%d>\n", count);
-    sprintf(snd.mesg_data, "");
-    snd.mesg_len = 0;
+    strncpy(snd.mesg_data, "", m_size);
+
     if(SendMessage(queue, &snd) < 0){
         printf("Error in ending msg, SendMessage fail\n");
     }

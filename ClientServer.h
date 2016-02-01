@@ -45,7 +45,8 @@ Standard Notes go here.
 #define SERVER_TO_ALL_CLIENTS 	2
 
 /* Global variables */
-int msgQueue, rc;
+int msgQueue; 
+int rc;
 
 /*
 ===============================================================================
@@ -102,6 +103,34 @@ Standard Notes go here.
 ===============================================================================
 */
 int SendMessage(int queue, Mesg* msg);
+
+/*
+===============================================================================
+FUNCTION:       Main 
+
+DATE:           January 9, 2016
+
+REVISIONS:      (Date and Description)
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+                Harvey Dent
+
+INTERFACE:      int main (char *process)
+
+PARAMETERS:     char *process: 
+                    the name of the process to be validated. 
+
+RETURNS:        -Returns the PID of process specified if the process
+                exists.          
+                -Returns 0 if the process was not found in the process table.
+
+NOTES:
+Standard Notes go here. 
+===============================================================================
+*/
+int ReadAllMessages(int queue, Mesg* msg, long msg_type);
 
 /*
 ===============================================================================

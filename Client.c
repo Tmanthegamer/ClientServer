@@ -54,7 +54,7 @@ int Client(void)
         printf("Exiting...\n");
         return -1;
     }
-    sprintf(snd.mesg_data, request);
+    strncpy(snd.mesg_data, request, BUFF);
     snd.mesg_type = type;
     snd.mesg_len = 20;
     if(SendMessage(msgQueue, &snd) < 0)
@@ -63,7 +63,7 @@ int Client(void)
       perror( strerror(errno) );
       return -1;
     }
-    printf("[%s][%d][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
+    printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
     Mesg rcv;
 
 
@@ -78,6 +78,7 @@ int Client(void)
             printf("%s", rcv.mesg_data);
         }
     }
+    printf("Finished reading server response.\n");
 
     return 0;
 }
