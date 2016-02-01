@@ -1,7 +1,7 @@
-/* 
+/*
 ===============================================================================
-SOURCE FILE:    Client.h 
-                    Header file 
+SOURCE FILE:    Client.h
+                    Header file
 
 PROGRAM:        Client Server
 
@@ -81,6 +81,7 @@ int ReadMessage(int queue, Mesg* msg, long msg_type)
 
 int SendMessage(int queue, Mesg* msg)
 {
+    msg->mesg_len = sizeof(msg->mesg_data);
     rc = msgsnd(queue,msg,sizeof(msg->mesg_data),IPC_NOWAIT);
 
     if (rc < 0)
@@ -179,19 +180,20 @@ int Server(void)
 
 int SearchForClients(void)
 {
-    #if 0
+    #if 1
     Mesg snd;
 
-    sprintf(snd.mesg_data, "nope5 10");
+    strcpy(snd.mesg_data, "nope5 10");
     snd.mesg_type = CLIENT_TO_SERVER;
     snd.mesg_len = 20;
-    printf("[SEND: len=%d]\n", snd.mesg_len);
+
     if(SendMessage(msgQueue, &snd) < 0)
     {
       printf("SendMessage\n");
       //RemoveQueue(msgQueue);
       return 1;
     }
+    printf("[SEND: len=%d]\n", snd.mesg_len);
     #endif
     Mesg rcv;
 
@@ -200,7 +202,7 @@ int SearchForClients(void)
     {
 
         //mesg_len doesn't work
-        printf("[msg:%s][len:%d][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+        printf("normal:[msg:%s][len:%d][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
         pid_t child;
         child = fork();
         switch(child)
@@ -210,7 +212,7 @@ int SearchForClients(void)
             break;
         case 0: //child
 
-            ProcessClient(&rcv, msgQueue);
+            //ProcessClient(&rcv, msgQueue);
             exit(1);
             break;
 
@@ -219,7 +221,10 @@ int SearchForClients(void)
             break;
         }
 
+    } else if (ReadMessage(msgQueue, &rcv, 1) == 0){
+      printf("else:[msg:%s][len:%d][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
     }
+
     //}
 
 
