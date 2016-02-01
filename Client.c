@@ -1,3 +1,30 @@
+/* 
+===============================================================================
+SOURCE FILE:    LinuxTerminal.c 
+                    An application that will mimic the basic functions of the standard linux terminal. PLEASE NOTE, THIS PROGRAM WILL REMOVE YOUR STANDARD LINUX TERMINAL FUNCTIONAL AND REPLACE IT WITH ITS OWN VERSION.
+
+PROGRAM:        Linux Terminal
+
+FUNCTIONS:      void function(void)
+                int functionTwo(int pants)
+                char* functionThree(char word)
+
+DATE:           January 9, 2016
+
+REVISIONS:
+
+DESIGNGER:      Tyler Trepanier-Bracken
+
+PROGRAMMER:     Tyler Trepanier-Bracken
+
+NOTES:
+Standard Notes go here.
+===============================================================================
+*/
+
+
+
+
 #include "Client.h"
 /*
 CURRENT ISSUES:

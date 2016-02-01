@@ -1,4 +1,32 @@
+/* 
+===============================================================================
+SOURCE FILE:    Client.h 
+                    Header file 
+
+PROGRAM:        Client Server
+
+FUNCTIONS:      void* OutputFunction(void *message)
+                int DisplayMessage(const char* message)
+                int PromptUserInput(char* input)
+                int ReadInput(void)
+                int ReadServerResponse(void)
+                int TerminateClient(void)
+
+
+DATE:           January 9, 2016
+
+REVISIONS:
+
+DESIGNGER:      Tyler Trepanier-Bracken
+
+PROGRAMMER:     Tyler Trepanier-Bracken
+
+NOTES:
+Standard Notes go here.
+===============================================================================
+*/
 #include "ClientServer.h"
+
 
 extern int errno;       // error NO.
 int done;
