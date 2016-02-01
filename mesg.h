@@ -4,6 +4,6 @@
 typedef struct
 {
 	int mesg_len; /* #bytes in mesg_data */
-	long mesg_type; /* message type */
-	char mesg_data[MAXMESSAGEDATA];
+	long mtype; /* message type */
+	char mtext[MAXMESSAGEDATA];
 } Mesg;
