@@ -1,6 +1,6 @@
-/* 
+/*
 ===============================================================================
-SOURCE FILE:    LinuxTerminal.c 
+SOURCE FILE:    LinuxTerminal.c
                     An application that will mimic the basic functions of the standard linux terminal. PLEASE NOTE, THIS PROGRAM WILL REMOVE YOUR STANDARD LINUX TERMINAL FUNCTIONAL AND REPLACE IT WITH ITS OWN VERSION.
 
 PROGRAM:        Linux Terminal
@@ -70,8 +70,8 @@ int Client(void)
     printf("%s\n", "Waiting for server...");
     while(1)
     {
-        if(ReadMessage(msgQueue, &rcv, SERVER_TO_ALL_CLIENTS) == 0){
-            if(strstr(rcv.mesg_data, "done") != 0) {
+        if(ReadMessage(msgQueue, &rcv, getpid()) == 0){
+            if(rcv.mesg_len == 0) {
                 break;
             }
             //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);

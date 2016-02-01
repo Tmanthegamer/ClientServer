@@ -60,8 +60,6 @@ int main(int argc, char **argv)
         Client();
     }
 
-
-
     return 0;
 }
 
@@ -180,7 +178,7 @@ int Server(void)
 
 int SearchForClients(void)
 {
-    #if 1
+    #if 0
     Mesg snd;
 
     strcpy(snd.mesg_data, "nope5 10");
@@ -221,8 +219,6 @@ int SearchForClients(void)
             break;
         }
 
-    } else if (ReadMessage(msgQueue, &rcv, 1) == 0){
-      printf("else:[msg:%s][len:%d][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
     }
 
     //}
@@ -330,13 +326,8 @@ int PacketizeData(FILE* fp,
 {
     Mesg snd;
     int m_size = MAXMESSAGEDATA;
-    char buf[m_size+1];
     int count = 0;
 
-    snd.mesg_type = msg_type;
-    snd.mesg_len = 20;
-
-    // Priority is organized by dividing the message by its priority number.
     if (priority < 0)
         m_size = 1;
     else if (priority > 10)
@@ -344,9 +335,17 @@ int PacketizeData(FILE* fp,
     else
         m_size = MAXMESSAGEDATA / priority;
 
+    char buf[m_size];
+
+    snd.mesg_type = msg_type;
+    // Priority is organized by dividing the message by its priority number.
+
+
+    //don't use fgets, copy each char individually until the limit is filled.
     while(fgets(buf, m_size, fp) != NULL)
     {
-        sprintf(snd.mesg_data, buf);
+        strcpy(snd.mesg_data, buf);
+        snd.mesg_len = strlen(buf);
         count++;
         if(SendMessage(queue, &snd) < 0){
             printf("Error in PacketizeData, SendMessage fail\n");
@@ -363,7 +362,8 @@ int PacketizeData(FILE* fp,
     }
 
     printf("Done packetizing <%d>\n", count);
-    sprintf(snd.mesg_data, "done");
+    sprintf(snd.mesg_data, "");
+    snd.mesg_len = 0;
     if(SendMessage(queue, &snd) < 0){
         printf("Error in ending msg, SendMessage fail\n");
     }
