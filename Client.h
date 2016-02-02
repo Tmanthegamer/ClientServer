@@ -29,6 +29,7 @@ Standard Notes go here.
 #include <pthread.h>
 #include "ClientServer.h"
 
+int done;
 /*
 ===============================================================================
 FUNCTION:       Main 
@@ -55,35 +56,7 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-void* OutputFunction(void *message);
-
-/*
-===============================================================================
-FUNCTION:       Main 
-
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
-
-INTERFACE:      int main (char *process)
-
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
-
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
-
-NOTES:
-Standard Notes go here. 
-===============================================================================
-*/
-int DisplayMessage(const char* message);
+void* ReadServerResponse(void *queue);
 
 /*
 ===============================================================================
@@ -167,32 +140,4 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-int ReadServerResponse(void);
-
-/*
-===============================================================================
-FUNCTION:       Main 
-
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
-
-INTERFACE:      int main (char *process)
-
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
-
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
-
-NOTES:
-Standard Notes go here. 
-===============================================================================
-*/
-int TerminateClient(void);
+int CreateReadThread();

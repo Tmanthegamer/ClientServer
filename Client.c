@@ -1,7 +1,7 @@
 /*
 ===============================================================================
 SOURCE FILE:    LinuxTerminal.c
-                    An application that will mimic the basic functions of the standard linux terminal. PLEASE NOTE, THIS PROGRAM WILL REMOVE YOUR STANDARD LINUX TERMINAL FUNCTIONAL AND REPLACE IT WITH ITS OWN VERSION.
+                    words go here
 
 PROGRAM:        Linux Terminal
 
@@ -43,30 +43,40 @@ int Client(void)
     Mesg snd;
 
     OpenQueue();
-    /*if(OpenQueue() < 0)
-    {
-        perror(strerror(errno));
-        return -1;
-    }*/
 
-    if(PromptUserInput(request) < 0)
+    done = 1;
+
+    while (1)
     {
-        printf("Exiting...\n");
-        return -1;
+        if(done) {
+            done = 0;
+
+            if(PromptUserInput(request) < 0)
+            {
+                printf("Exiting...\n");
+                return -1;
+            }
+
+            strncpy(snd.mesg_data, request, BUFF);
+            
+            snd.mesg_type = type;
+            snd.mesg_len = 20;
+            if(SendMessage(msgQueue, &snd) < 0)
+            {
+              printf("SendMessage\n");
+              perror( strerror(errno) );
+              return -1;
+            }
+            
+            printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
+            
+            CreateReadThread();
+        }
+        
     }
-    strncpy(snd.mesg_data, request, BUFF);
-    snd.mesg_type = type;
-    snd.mesg_len = 20;
-    if(SendMessage(msgQueue, &snd) < 0)
-    {
-      printf("SendMessage\n");
-      perror( strerror(errno) );
-      return -1;
-    }
-    printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
-    Mesg rcv;
+    
 
-
+    /*
     printf("%s\n", "Waiting for server...");
     while(1)
     {
@@ -78,25 +88,22 @@ int Client(void)
             printf("%s", rcv.mesg_data);
         }
     }
-    printf("Finished reading server response.\n");
+    printf("Finished reading server response.\n");*/
 
     return 0;
 }
 
-void* OutputFunction(void* message)
+int CreateReadThread()
 {
-    printf("%s", (char*)message);
-    pthread_exit((void*)0);
-}
 
-int DisplayMessage(const char* message)
-{
+    printf("hit\n");
+
     pthread_attr_t detach_attr;
     pthread_t thread;
 
     pthread_attr_init(&detach_attr);
     pthread_attr_setdetachstate(&detach_attr, PTHREAD_CREATE_DETACHED);
-    rc = pthread_create(&thread, &detach_attr, OutputFunction, (void*)message);
+    rc = pthread_create(&thread, &detach_attr, ReadServerResponse, (void*)&msgQueue);
 
     if(rc != 0)
     {
@@ -112,7 +119,10 @@ int PromptUserInput(char* input)
 
     char name[BUFF];
 
+    printf("\nThis client's PID is: %d\n", getpid());
+    printf("You can quit by entering: \'quit\'.\n");
     printf("Please enter: [filename] [(optional)priority]\n");
+    
     if ((fgets(input, BUFF-1, stdin)) == NULL)
     {
         printf("error in user input.\n");
@@ -127,12 +137,33 @@ int PromptUserInput(char* input)
     }
 
     sprintf(input, "%s %d %d", name, priority, getpid());
-
+    
+    if(strstr(name, "quit") != 0)
+    {
+        return -1;
+    }
 
 
     return 0;
 }
 
-int ReadServerResponse(void);
+void* ReadServerResponse(void* msgQueue)
+{
+    Mesg rcv;
+    rcv.mesg_len = 0;
 
-int TerminateClient(void);
+    while(1)
+    {
+        if(ReadMessage((*(int*)msgQueue), &rcv, getpid()) == 0){
+            if(rcv.mesg_len == 0) {
+                break;
+            }
+            //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+            printf("%s", rcv.mesg_data);
+        }
+    }
+    printf("Finished reading server response.\n");
+    done = 1;
+
+    return 0;
+}

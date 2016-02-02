@@ -29,7 +29,6 @@ Standard Notes go here.
 
 
 extern int errno;       // error NO.
-int done;
 
 int main(int argc, char **argv)
 {
@@ -85,6 +84,9 @@ int ReadAllMessages(int queue, Mesg* msg, long msg_type)
 int SendMessage(int queue, Mesg* msg)
 {
     msg->mesg_len = strlen(msg->mesg_data);
+    
+    /* This will keep trying to send messages the message queue if there are 
+        too many messages in the queue. */
     rc = msgsnd(queue, msg, sizeof(msg->mesg_data), 0);
 
     if (rc < 0)
@@ -105,43 +107,20 @@ int SendMessage(int queue, Mesg* msg)
     */
 }
 
+int SendFinalMessage(int queue, Mesg* msg)
+{
+    msg->mesg_data[0] = '\0';
+    msg->mesg_data[1] = '\0';
+    return SendMessage(queue, msg);
+}
+
 int RemoveQueue(int queue)
 {
     int rc;
     if (( rc= msgctl(queue, IPC_RMID, NULL) ) < 0)
     {
-        perror( strerror(errno) );
-        printf("msgctl (return queue) failed, rc=%d\n", rc);
         return 1;
     }
-    return 0;
-}
-
-int ParseCommandLine(void)
-{
-    /*
-    Read the command line arguments
-    IF command line specifies server
-        Goto SERVER
-    ELSE
-        Goto Client
-    */
-    return 0;
-}
-
-int OpenNewQueue(void)
-{
-    key_t key;
-
-    key = ftok("Info", 'a');
-    msgQueue = msgget(key, 0644|IPC_CREAT|IPC_EXCL);
-    printf("Queue:%d\n", msgQueue);
-    //msgQueue = msgget(IPC_PRIVATE,IPC_CREAT|IPC_EXCL);
-
-    if (msgQueue < 0) {
-        return -1;
-    }
-
     return 0;
 }
 
@@ -150,9 +129,7 @@ int OpenQueue(void)
     key_t key;
 
     key = ftok("Info", 'a');
-    msgQueue = msgget(key, 0644|IPC_EXCL);
-    printf("Queue:%d\n", msgQueue);
-    //msgQueue = msgget(IPC_PRIVATE,IPC_CREAT|IPC_EXCL);
+    msgQueue = msgget(key, 0644|IPC_CREAT);
 
     if (msgQueue < 0) {
         return -1;
@@ -165,14 +142,12 @@ int OpenQueue(void)
 int Server(void)
 {
 
-    if(OpenNewQueue() < 0)
-    {
-        OpenQueue();
-    }
+    if(OpenQueue() < 0)
+        return 1;
 
     SearchForClients();
 
-    //RemoveQueue(msgQueue);
+    RemoveQueue(msgQueue);
     /*
     Create ClientServer msg queue
     Assign Message-Type 1 to be the messages designated Client to Server
@@ -273,7 +248,17 @@ int ProcessClient(Mesg* msg, int queue)
     printf("Opening file.\n");
     if((file = OpenFile(name)) == NULL)
     {
-        printf("Cannot open file.\n");
+        msg->mesg_type = client;
+        sprintf(msg->mesg_data, "Cannot open file: %s\n\0", name);
+       if(SendMessage(queue, msg) < 0){
+            
+        }
+
+        if(SendFinalMessage(queue, msg) < 0)
+        {
+            printf("Can't print final message.\n");
+        }
+
         /*
         Failure: File cannot be opened for reading
             Send “Error: Cannot open file” message to SEND MESSAGE
@@ -334,10 +319,11 @@ int PacketizeData(FILE* fp,
     int m_size = MAXMESSAGEDATA;
     int count = 0;
 
+
     if (priority < 0)
-        m_size = 1;
-    else if (priority > 10)
-        m_size = 10;
+        m_size = MAXMESSAGEDATA;
+    else if (priority > 1000)
+        m_size = MAXMESSAGEDATA / 1000;
     else
         m_size = MAXMESSAGEDATA / priority;
 
@@ -346,18 +332,17 @@ int PacketizeData(FILE* fp,
     snd.mesg_type = msg_type;
     // Priority is organized by dividing the message by its priority number.
     printf("PacketizeData.\n");
-
-    for()
+    printf("[m_size:%d]", m_size);
 
     //don't use fgets, copy each char individually until the limit is filled.
     while(fgets(buf, m_size, fp) != NULL)
     {
         strcpy(snd.mesg_data, buf);
-        snd.mesg_len = strlen(buf);
-        count++;
+
         if(SendMessage(queue, &snd) < 0){
             printf("Error in PacketizeData, SendMessage fail\n");
         }
+
         //printf("<Portion: %d>\n\n%s", count++, buf);
         /*
         Send the portion of the message to SEND MESSAGES
@@ -368,11 +353,8 @@ int PacketizeData(FILE* fp,
         Restart loop
         */
     }
-
-    printf("Done packetizing <%d>\n", count);
-    strncpy(snd.mesg_data, "", m_size);
-
-    if(SendMessage(queue, &snd) < 0){
+    printf("Done, sending final message\n");
+    if(SendFinalMessage(queue, &snd) < 0){
         printf("Error in ending msg, SendMessage fail\n");
     }
     fclose(fp);
@@ -386,12 +368,17 @@ void sig_handler(int sig)
     if(sig){
 
     }
-    //RemoveQueue(msgQueue);
-    printf("Removed queue\n");
+    RemoveQueue(msgQueue);
     fflush(stdout);
     /*
     ADD IN MORE CLEAN UP DUTIES HERE.
     */
 
     exit(1);
+}
+
+
+void Cleanup(void)
+{
+
 }
