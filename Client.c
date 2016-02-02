@@ -42,7 +42,9 @@ int Client(void)
 
     Mesg snd;
 
-    OpenQueue();
+    if(OpenQueue() < 0){
+        return 1;
+    }
 
     done = 1;
 

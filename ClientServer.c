@@ -27,6 +27,12 @@ Standard Notes go here.
 */
 #include "ClientServer.h"
 
+/*
+    TODO: 
+    -Extract ProcessInput from the LinuxTerminal for user input
+    -Use that Process Input to allow the user to exit the application
+    -Fill in the Cleanup function.
+*/
 
 extern int errno;       // error NO.
 
@@ -145,6 +151,7 @@ int Server(void)
     if(OpenQueue() < 0)
         return 1;
 
+    //Insert ProcessInput functional inside here.
     SearchForClients();
 
     RemoveQueue(msgQueue);
@@ -172,6 +179,7 @@ int SearchForClients(void)
     }
     printf("[SEND: len=%zu]\n", snd.mesg_len);
     #endif
+
     Mesg rcv;
 
     while (1){

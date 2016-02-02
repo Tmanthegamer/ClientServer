@@ -253,7 +253,7 @@ int main(int argc,char **argv);
 ===============================================================================
 FUNCTION:       Open Queue 
 
-DATE:           January 9, 2016
+DATE:           January 28, 2016
 
 REVISIONS:      Febuary 1, 2016 (Tyler Trepanier-Bracken)
                     Removed the previous function OpenNewQueue and instead
@@ -282,21 +282,22 @@ int OpenQueue(void);
 ===============================================================================
 FUNCTION:       Server 
 
-DATE:           January 9, 2016
+DATE:           January 28, 2016
 
-REVISIONS:      (Date and Description)
+REVISIONS:      Febuary 1, 2016 (Tyler Trepanier)
+                    Removed deprecated message queue tests and debug 
+                    statements.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
 INTERFACE:      int Server(void)
 
 PARAMETERS:     void
 
 RETURNS:        -Returns 1 if the Server was unable to open a message queue.
-                -Returns 0 on successful 
+                -Returns 0 on proper program termination
 
 NOTES:
 Separate functionality from the Client side, the purpose of this function is
@@ -311,56 +312,56 @@ int Server(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Search For Clients 
 
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
+DATE:           January 30, 2016            
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int SearchForClients(void)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     void
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns 1 on improper termination.
+                -Returns 0 when the user gracefully terminates the reading.
 
 NOTES:
-Standard Notes go here. 
+Searches for multiple clients and assigns each client a separate process.
 ===============================================================================
 */
 int SearchForClients(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Client
 
-DATE:           January 9, 2016
+DATE:           January 30, 2016
 
-REVISIONS:      (Date and Description)
+REVISIONS:      Febuary 1, 2016 (Tyler Trepanier-Bracken)
+                    Implemented threads to read from a server.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int Client(void)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     void
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns 1 if the Client was unable to open a message queue.
+                -Returns 0 on proper program termination
 
 NOTES:
-Standard Notes go here. 
+Separate functionality from the Server side, the purpose of this function is
+to allow user requests for files. First it opens the message queue (if it cannot open the message queue, this will exit the application). The request will be padded with the PID of the current process and the optional priority. 
+
+Afterwards the server will respond with the contents of the file inside of a
+series of messages. If the server cannot open the file, the server will 
+respond with an error.
+
+The program will continually asked for user input until user enters "quit" or ctrl-c has been hit.
 ===============================================================================
 */
 int Client(void);
@@ -369,7 +370,7 @@ int Client(void);
 ===============================================================================
 FUNCTION:       Main 
 
-DATE:           January 9, 2016
+DATE:           January 30, 2016
 
 REVISIONS:      (Date and Description)
 
