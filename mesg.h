@@ -26,7 +26,7 @@ Standard Notes go here.
 ===============================================================================
 */
 
- /* don't want sizeof(Mesg) > 4096 */
+ /* Maximum message size allowed on the message queue. */
 #define MAXMESSAGEDATA 	(4096-16)
 
 /* length of mesg_len and mesg_type */

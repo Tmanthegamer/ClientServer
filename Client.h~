@@ -7,9 +7,9 @@ PROGRAM:        Client
 
 FUNCTIONS:      int main(void)
                 int Client(void)
-        		int PromptUserInput(char* input)
-        		int CreateReadThread(void)
-        		void* ReadServerResponse(void *queue)
+    			int PromptUserInput(char* input)
+    			int CreateReadThread(void)
+    			void* ReadServerResponse(void *queue)
                 void sig_handler(int sig)
 
 
