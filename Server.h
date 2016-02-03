@@ -1,35 +1,4 @@
-/* 
-===============================================================================
-SOURCE FILE:    Client.h 
-                    Header file 
-
-PROGRAM:        Client Server
-
-FUNCTIONS:      void* OutputFunction(void *message)
-				int DisplayMessage(const char* message)
-				int PromptUserInput(char* input)
-				int ReadInput(void)
-				int ReadServerResponse(void)
-				int TerminateClient(void)
-
-
-DATE:           January 9, 2016
-
-REVISIONS:
-
-DESIGNGER:      Tyler Trepanier-Bracken
-
-PROGRAMMER:     Tyler Trepanier-Bracken
-
-NOTES:
-Standard Notes go here.
-===============================================================================
-*/
-
-#include <pthread.h>
 #include "Utilities.h"
-
-int done;
 
 /*
 ===============================================================================
@@ -73,39 +42,65 @@ int main(int argc,char **argv);
 
 /*
 ===============================================================================
-FUNCTION:       Client
+FUNCTION:       Server 
 
-DATE:           January 30, 2016
+DATE:           January 28, 2016
 
-REVISIONS:      Febuary 1, 2016 (Tyler Trepanier-Bracken)
-                    Implemented threads to read from a server.
+REVISIONS:      Febuary 1, 2016 (Tyler Trepanier)
+                    Removed deprecated message queue tests and debug 
+                    statements.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
-INTERFACE:      int Client(void)
+INTERFACE:      int Server(void)
 
 PARAMETERS:     void
 
-RETURNS:        -Returns 1 if the Client was unable to open a message queue.
+RETURNS:        -Returns 1 if the Server was unable to open a message queue.
                 -Returns 0 on proper program termination
 
 NOTES:
-Separate functionality from the Server side, the purpose of this function 
-is to allow user requests for files. First it opens the message queue (if it 
-cannot open the message queue, this will exit the application). The request 
-will be padded with the PID of the current process and the optional priority. 
+Separate functionality from the Client side, the purpose of this function is
+to service all incoming client messages. First it opens the message queue (if
+it cannot open the message queue, this will exit the application) and searches
+for all incoming clients. 
 
-Afterwards the server will respond with the contents of the file inside of a
-series of messages. If the server cannot open the file, the server will 
-respond with an error.
-
-The program will continually asked for user input until user enters "quit" 
-or ctrl-c has been hit.
+Upon user request, the message queue will terminate.
 ===============================================================================
 */
-int Client(void);
+int Server(void);
+
+/*
+===============================================================================
+FUNCTION:       Process Client 
+
+DATE:           January 30, 2016
+
+REVISIONS:      Feb 1, 2016 (Tyler Trepanier-Bracken)
+                    Implemented final message to let the client know that the
+                    sending for a specific file is finished. Previously,
+                    there was no final message and client was stuck reading
+                    forever.
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+
+INTERFACE:      int main (char *process)
+
+PARAMETERS:     Mesg* msg, 
+                int queue
+
+RETURNS:        -Returns -1 on failure to Open the client requested file.       
+                -Returns 0 if the file was opened and sent successfully.
+
+NOTES:
+Standard Notes go here. 
+===============================================================================
+*/
+int ProcessClient(Mesg* msg, int queue);
 
 /*
 ===============================================================================
@@ -133,7 +128,10 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-void* ReadServerResponse(void *queue);
+int PacketizeData(FILE* fp,
+                  const int queue,
+                  const long msg_type,
+                  const int priority);
 
 /*
 ===============================================================================
@@ -161,7 +159,10 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-int PromptUserInput(char* input);
+int DesignatePriority(const char* text,
+                      char* name,
+                      int* priority,
+                      pid_t* client);
 
 /*
 ===============================================================================
@@ -189,32 +190,27 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-int ReadInput(void);
+void Cleanup(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Search For Clients 
 
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
+DATE:           January 30, 2016            
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int SearchForClients(void)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     void
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns 1 on improper termination.
+                -Returns 0 when the user gracefully terminates the reading.
 
 NOTES:
-Standard Notes go here. 
+Searches for multiple clients and assigns each client a separate process.
 ===============================================================================
 */
-int CreateReadThread();
+int SearchForClients(void);

@@ -23,8 +23,6 @@ Standard Notes go here.
 */
 
 
-
-
 #include "Client.h"
 /*
 CURRENT ISSUES:
@@ -33,7 +31,25 @@ MESSAGES SHOULD BE IN THE FORMAT OF <FILENAME> <PRIORITY> <CLIENT>
 HOWEVER WHENEVER THERE'S ONLY <FILENAME> INPUTTED BY THE user
     THE RESULTING MESSAGE WILL BE <FILENAME> <CLIENT>
 */
+int main(int argc, char **argv)
+{
+    struct sigaction sa;
+    struct sigaction oldint;
 
+    sa.sa_handler = sig_handler;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_flags = 0;
+
+    sigaction (SIGINT, &sa, &oldint);
+    sigaction (SIGTSTP, &sa, NULL);
+
+    Client();
+
+    // Restore normal action
+    sigaction (SIGINT, &oldint, NULL);
+
+    return 0;
+}
 
 int Client(void)
 {
