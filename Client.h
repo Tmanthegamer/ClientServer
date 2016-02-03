@@ -5,24 +5,47 @@ SOURCE FILE:    Client.h
 
 PROGRAM:        Client Server
 
-FUNCTIONS:      void* OutputFunction(void *message)
-				int DisplayMessage(const char* message)
+FUNCTIONS:      int main(void)
+                int Client(void);
 				int PromptUserInput(char* input)
-				int ReadInput(void)
-				int ReadServerResponse(void)
-				int TerminateClient(void)
+				int CreateReadThread(void);
+				void* ReadServerResponse(void *queue);
+                void sig_handler(int sig)
 
 
-DATE:           January 9, 2016
+DATE:           January 30, 2016
 
-REVISIONS:
+REVISIONS:      January 31, 2016        (Tyler Trepanier-Bracken)
+                    Splitting the old "ClientServer" functionality into
+                    the Client files and the Server files. In addition, 
+                    worked on Prompt-User Input for bug fixing and formatting
+                    the desired message.
+                
+                Febuary 2, 2016         (Tyler Trepanier-Bracken)
+                    Both Client and Server files have been split from each
+                    other and any shared functionality has been included
+                    inside of the Utilities files. NOTE: Both Server and
+                    Client has their own definitions of the sig_handler
+                    with their own implementations.
 
 DESIGNGER:      Tyler Trepanier-Bracken
 
 PROGRAMMER:     Tyler Trepanier-Bracken
 
 NOTES:
-Standard Notes go here.
+Client is a stand-alone program which allows the user to ask for files to read
+and displayed onto the stdout of this process. This client may have multiple
+instances at once and they work in unison with only one Server. 
+
+Each individual Client requests the user to enter in the filename and, if
+they so please, the priority and another client's process id. This request
+gets bundled into a message which gets sent to the server where the server
+processes this file opening request. Afterwards, the server responds which
+either an error message or the contents of the file.
+
+This is the main file that holds all of the unique functionality of the Client
+program. There are some shared functionality with the Server that is defined
+inside of the Utilities files.
 ===============================================================================
 */
 
@@ -30,6 +53,7 @@ Standard Notes go here.
 #include "Utilities.h"
 
 int done, ready;
+int thread = 0;
 
 /*
 ===============================================================================
@@ -139,7 +163,6 @@ REVISIONS:      Febuary 2, 2016 (Tyler Trepanier-Bracken)
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
 INTERFACE:      int PromptUserInput(char* input)
 
@@ -167,26 +190,26 @@ int PromptUserInput(char* input);
 ===============================================================================
 FUNCTION:       Create Read Thread 
 
-DATE:           January 9, 2016
+DATE:           January 30, 2016
 
-REVISIONS:      (Date and Description)
+REVISIONS:      Feb 1, 2016     (Tyler Trepanier-Bracken)
+                    Set the parameter to be the message queue which is passed
+                    to the Read Server Response function
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
 INTERFACE:      int CreateReadThread(void)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     void
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns -1 if unable to create the read thread. 
+                -Returns 0 if the read thread creation succeeded.
 
 NOTES:
-Standard Notes go here. 
+Creates a thread which has the sole purpose of reading all messages from the
+message queue for aimed at this process.
 ===============================================================================
 */
 int CreateReadThread(void);

@@ -307,3 +307,18 @@ int CreateInputThread(void)
     }
     return 0;
 }
+
+/* Simple signal handler */
+void sig_handler(int sig)
+{
+    if(sig){
+
+    }
+    RemoveQueue(msgQueue);
+    fflush(stdout);
+    /*
+    ADD IN MORE CLEAN UP DUTIES HERE.
+    */
+
+    exit(1);
+}

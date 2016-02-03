@@ -64,7 +64,8 @@ int Client(void)
 
     done = 1;
 
-    CreateReadThread();
+    if(CreateReadThread() < 0)
+        return -1;
 
     while (1)
     {
@@ -74,6 +75,7 @@ int Client(void)
             if(rc < 0)
             {
                 printf("Exiting...\n");
+                thread = 0;
                 return 0;
             } 
             else if(rc == 1)
@@ -181,7 +183,7 @@ void* ReadServerResponse(void* msgQueue)
     Mesg rcv;
     rcv.mesg_len = 0;
 
-    while(1)
+    while(thread)
     {
         while(ready)
         {
@@ -197,8 +199,6 @@ void* ReadServerResponse(void* msgQueue)
         done = 1;
         ready = 0;
     }
-
-    
 
     return 0;
 }
@@ -223,4 +223,21 @@ void ClientHelp(void)
     printf("You can close this application by entering \"quit\". \n\n")
     printf("Enter in \"help\"to to see this message again.   \n");
     printf("=================================================\n");
+}
+
+/* Simple signal handler */
+void sig_handler(int sig)
+{
+    thread = 0;
+    if(sig){
+
+    }
+    
+    RemoveQueue(msgQueue);
+    fflush(stdout);
+    /*
+    ADD IN MORE CLEAN UP DUTIES HERE.
+    */
+
+    exit(1);
 }
