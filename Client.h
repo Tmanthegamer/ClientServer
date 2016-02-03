@@ -29,7 +29,7 @@ Standard Notes go here.
 #include <pthread.h>
 #include "Utilities.h"
 
-int done;
+int done, ready;
 
 /*
 ===============================================================================
@@ -40,36 +40,28 @@ DATE:           January 28, 2016
 REVISIONS:      January 30, 2016    (Tyler Trepanier-Bracken)
                     Moved existing code for sending test messages into Server
                     function.
-                Febuary 30, 2016     (Tyler Trepanier-Bracken)
+                Febuary 1, 2016     (Tyler Trepanier-Bracken)
                     Create the functionality to split the server and client
                     components via command-line arguments.
+                Febuary 2, 2016     (Tyler Trepanier-Bracken)
+                    Split this function into separate files: Client and 
+                    Server.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
-INTERFACE:      int main(int argc,
-                         char **argv)
+INTERFACE:      int main(void)
 
-PARAMETERS:     int argc,
-                    Number of command-line arguments. Used to verify the
-                    correctness of program calling.
-                char **argv
-                    Command-line arguments. Only second argument is taken
-                    into consideration for this program.
 RETURNS:        -Returns 1 on improper program exit.
                 -Returns 0 on normal program termination.
 
 NOTES:
 Main entry point into the program. Divides program functionality based on the 
 command-line arguments into client and server functionality. 
-
-Server will start when the Program is called with the 's' character.
-
-Client will start when the Program is called with the 'c' character.
 ===============================================================================
 */
-int main(int argc,char **argv);
+int main(void);
 
 /*
 ===============================================================================
@@ -109,63 +101,71 @@ int Client(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Read Server Response 
 
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
+DATE:           Febuary 1, 2016
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      void* ReadServerResponse(void *queue)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     void *queue
+                    Pointer to an integer which is the message queue that
+                    the server reads on.
 
 RETURNS:        -Returns the PID of process specified if the process
                 exists.          
                 -Returns 0 if the process was not found in the process table.
 
 NOTES:
-Standard Notes go here. 
+This is a thread function that contiuously reads the message queue for any 
+messages in the queue that are meant for this Client.
 ===============================================================================
 */
 void* ReadServerResponse(void *queue);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Prompt User Input
 
-DATE:           January 9, 2016
+DATE:           January 31, 2016
 
-REVISIONS:      (Date and Description)
+REVISIONS:      Febuary 2, 2016 (Tyler Trepanier-Bracken)
+                    Implemented help messages and normal termination via 
+                    requesting a program quit.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
                 Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int PromptUserInput(char* input)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     char *input
+                    The buffer which will be written onto. This will hold
+                    the client's pid, priority and the filename when the user
+                    succesfully inputs the required information.
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns -1 on a quit request
+                -Returns 0 on succesful user input
+                -Returns 1 on help message requested.
 
 NOTES:
-Standard Notes go here. 
+This function grabs filenames from stdin (user input). In addition, the user
+is prompted to add in priority or even a client's process ID.
+
+When first prompted with filename request, the user has the ability to quit
+the application by entering "quit". The user can also request on how to use
+the application by entering "help".
 ===============================================================================
 */
 int PromptUserInput(char* input);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Create Read Thread 
 
 DATE:           January 9, 2016
 
@@ -176,7 +176,7 @@ DESIGNER:       Tyler Trepanier-Bracken
 PROGRAMMER(S):  Tyler Trepanier-Bracken
                 Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int CreateReadThread(void)
 
 PARAMETERS:     char *process: 
                     the name of the process to be validated. 
@@ -189,32 +189,25 @@ NOTES:
 Standard Notes go here. 
 ===============================================================================
 */
-int ReadInput(void);
+int CreateReadThread(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Client Help
 
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
+DATE:           Febuary 2, 2016            
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      void ClientHelp(void);
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
-
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+PARAMETERS:     void
 
 NOTES:
-Standard Notes go here. 
+Displays a help message to standard output that displays how to use this
+Client application.
 ===============================================================================
 */
-int CreateReadThread();
+void ClientHelp(void);

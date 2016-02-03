@@ -30,6 +30,7 @@ Standard Notes go here.
 #include "Server.h"
 
 extern int errno;       // error NO.
+int quit = 0;
 /*
     TODO: 
     -Extract ProcessInput from the LinuxTerminal for user input
@@ -94,7 +95,7 @@ int SearchForClients(void)
 
     Mesg rcv;
 
-    while (1){
+    while (!quit){
         if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
         {
 
@@ -258,4 +259,51 @@ int PacketizeData(FILE* fp,
 void Cleanup(void)
 {
 
+}
+
+void ServerHelp(void)
+{
+    printf("\n==================================================\n");
+    printf("               SERVER PROGRAM USAGE                \n");
+    printf("==================================================\n\n");
+    printf("This application requires no user input to run   \n");
+    printf("however you can close the server at anytime by   \n");
+    printf("pressing the 'q' key on your keyboard or ctrl-c. \n");
+    printf("=================================================\n");
+}
+
+void* Input(void* unused)
+{
+	char message;
+
+	printf("You can press 'h' at anytime for this program's usage.");
+	while((message = fgetc(stdin)) != NULL)
+	{
+		if(message == 'h')
+			ServerHelp();
+		else if(message == 'q')
+		{
+			quit = 1;
+			break;
+		}
+			
+	}
+
+}
+
+int CreateInputThread(void)
+{
+
+    pthread_attr_t detach_attr;
+    pthread_t thread;
+
+    pthread_attr_init(&detach_attr);
+    pthread_attr_setdetachstate(&detach_attr, PTHREAD_CREATE_DETACHED);
+    rc = pthread_create(&thread, &detach_attr, ReadServerResponse, (void*)0);
+
+    if(rc != 0)
+    {
+        return -1;
+    }
+    return 0;
 }

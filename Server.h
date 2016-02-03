@@ -214,3 +214,70 @@ Searches for multiple clients and assigns each client a separate process.
 ===============================================================================
 */
 int SearchForClients(void);
+
+/*
+===============================================================================
+FUNCTION:       Server Help
+
+DATE:           Febuary 2, 2016            
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+
+INTERFACE:      void ServerHelp(void);
+
+PARAMETERS:     void
+
+NOTES:
+Displays a help message to standard output that displays how to use this
+Server application.
+===============================================================================
+*/
+void ServerHelp(void);
+
+/*
+===============================================================================
+FUNCTION:       Search For Clients 
+
+DATE:           January 30, 2016            
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+
+INTERFACE:      int SearchForClients(void)
+
+PARAMETERS:     void
+
+RETURNS:        -Returns 1 on improper termination.
+                -Returns 0 when the user gracefully terminates the reading.
+
+NOTES:
+Searches for multiple clients and assigns each client a separate process.
+===============================================================================
+*/
+void* Input(void* unused);
+
+/*
+===============================================================================
+FUNCTION:       Search For Clients 
+
+DATE:           January 30, 2016            
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+
+INTERFACE:      int SearchForClients(void)
+
+PARAMETERS:     void
+
+RETURNS:        -Returns 1 on improper termination.
+                -Returns 0 when the user gracefully terminates the reading.
+
+NOTES:
+Searches for multiple clients and assigns each client a separate process.
+===============================================================================
+*/
+int CreateInputThread(void);
