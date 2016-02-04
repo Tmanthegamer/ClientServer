@@ -110,8 +110,6 @@ int Client(int argc, char** argv)
             snd.mesg_type = type;
             if(SendMessage(msgQueue, &snd) < 0)
             {
-
-              perror( strerror(errno) );
               return -1;
             }
 

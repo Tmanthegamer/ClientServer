@@ -1,30 +1,60 @@
-
-
-/*
+/* 
 ===============================================================================
-SOURCE FILE:    Client.h
-                    Header file
+SOURCE FILE:    Server.c
+                    Definition file for the Server
 
-PROGRAM:        Client Server
+PROGRAM:        Server
 
-FUNCTIONS:      void* OutputFunction(void *message)
-                int DisplayMessage(const char* message)
-                int PromptUserInput(char* input)
-                int ReadInput(void)
-                int ReadServerResponse(void)
-                int TerminateClient(void)
+FUNCTIONS:      int main(void)
+                int Server(void)
+                int SearchForClients(void)
+                int ProcessClient(Mesg* msg, int queue)
+                int DesignatePriority(const char* text,
+                      char* name,
+                      int* priority,
+                      pid_t* client)
+                int PacketizeData(FILE* fp,
+                      const int queue,
+                      const long msg_type,
+                      const int priority)
+                void sig_handler(int sig)
 
 
-DATE:           January 9, 2016
+DATE:           January 30, 2016
 
-REVISIONS:
+REVISIONS:      January 31, 2016        (Tyler Trepanier-Bracken)
+                    Splitting the old "ClientServer" functionality into
+                    the Client files and the Server files. In addition, 
+                    worked on Prompt-User Input for bug fixing and formatting
+                    the desired message.
+                
+                Febuary 2, 2016         (Tyler Trepanier-Bracken)
+                    Both Client and Server files have been split from each
+                    other and any shared functionality has been included
+                    inside of the Utilities files. NOTE: Both Server and
+                    Client has their own definitions of the sig_handler
+                    with their own implementations.
 
 DESIGNGER:      Tyler Trepanier-Bracken
 
 PROGRAMMER:     Tyler Trepanier-Bracken
 
 NOTES:
-Standard Notes go here.
+Server is a stand-alone program which allows any incoming Clients to request 
+files to be read and its information sent to the client. There should be only 
+one instance of Server as both Servers can cause collisions with each other.
+
+The Server uses the client's filename, mentioned in the mesg_data, to open
+a new file for reading. Upon success, it will disperse the contents of the
+file to the Client. Failure will simply send a small message to the Client
+indicating failure to open the file.
+
+In addition, the Client can specify their priority level (defaults to max),
+which will affect the speed of transmission between the Client and the Server.
+
+This is the main file that holds all of the unique functionality of the Server
+program. There are some shared functionality with the Client that is defined
+inside of the Utilities files.
 ===============================================================================
 */
 #include "Server.h"
@@ -118,13 +148,11 @@ int ProcessClient(Mesg* msg, int queue)
         msg->mesg_type = client;
         sprintf(msg->mesg_data, "Cannot open file: %s\n", name);
        if(SendMessage(queue, msg) < 0){
-            perror("Unable to send message");
             return -1;
         }
 
         if(SendFinalMessage(queue, msg) < 0)
         {
-            printf("Can't send final message.\n");
             return -1;
         }
 
@@ -178,13 +206,14 @@ int PacketizeData(FILE* fp,
     snd.mesg_type = msg_type;
     // Priority is organized by dividing the message by its priority number.
 
-    while((i = fread(buf, sizeof(char), (sizeof(buf)/sizeof(char)) -1, fp)))
+    while((i = fread(buf, sizeof(char), (sizeof(buf)/sizeof(char)) -1, fp)) && 
+        !quit)
     {
         buf[i] = '\0';
         strcpy(snd.mesg_data, buf);
 
         if(SendMessage(queue, &snd) < 0){
-            printf("Error in PacketizeData, SendMessage fail\n");
+            break;
         }
 
     }
@@ -200,16 +229,11 @@ int PacketizeData(FILE* fp,
 
 
     if(SendFinalMessage(queue, &snd) < 0){
-        printf("Error in ending msg, SendMessage fail\n");
+        
     }
     fclose(fp);
 
     return 0;
-}
-
-void Cleanup(void)
-{
-
 }
 
 /* Simple signal handler */
@@ -221,6 +245,4 @@ void sig_handler(int sig)
     }
         
     quit = 1;
-    RemoveQueue(msgQueue);
-    exit(1);
 }

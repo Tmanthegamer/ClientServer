@@ -1,15 +1,22 @@
 /* 
 ===============================================================================
-SOURCE FILE:    Client.h 
-                    Header file 
+SOURCE FILE:    Server.h 
+                    Header file for the Server
 
-PROGRAM:        Client
+PROGRAM:        Server
 
 FUNCTIONS:      int main(void)
-                int Client(void)
-                int PromptUserInput(char* input)
-                int CreateReadThread(void)
-                void* ReadServerResponse(void *queue)
+                int Server(void)
+                int SearchForClients(void)
+                int ProcessClient(Mesg* msg, int queue)
+                int DesignatePriority(const char* text,
+                      char* name,
+                      int* priority,
+                      pid_t* client)
+                int PacketizeData(FILE* fp,
+                      const int queue,
+                      const long msg_type,
+                      const int priority)
                 void sig_handler(int sig)
 
 
@@ -33,18 +40,20 @@ DESIGNGER:      Tyler Trepanier-Bracken
 PROGRAMMER:     Tyler Trepanier-Bracken
 
 NOTES:
-Client is a stand-alone program which allows the user to ask for files to read
-and displayed onto the stdout of this process. This client may have multiple
-instances at once and they work in unison with only one Server. 
+Server is a stand-alone program which allows any incoming Clients to request 
+files to be read and its information sent to the client. There should be only 
+one instance of Server as both Servers can cause collisions with each other.
 
-Each individual Client requests the user to enter in the filename and, if
-they so please, the priority and another client's process id. This request
-gets bundled into a message which gets sent to the server where the server
-processes this file opening request. Afterwards, the server responds which
-either an error message or the contents of the file.
+The Server uses the client's filename, mentioned in the mesg_data, to open
+a new file for reading. Upon success, it will disperse the contents of the
+file to the Client. Failure will simply send a small message to the Client
+indicating failure to open the file.
 
-This is the main file that holds all of the unique functionality of the Client
-program. There are some shared functionality with the Server that is defined
+In addition, the Client can specify their priority level (defaults to max),
+which will affect the speed of transmission between the Client and the Server.
+
+This is the main file that holds all of the unique functionality of the Server
+program. There are some shared functionality with the Client that is defined
 inside of the Utilities files.
 ===============================================================================
 */
@@ -72,16 +81,12 @@ INTERFACE:      int main(void)
 
 PARAMETERS:     void
 
-RETURNS:        -Returns 1 on improper program exit.
-                -Returns 0 on normal program termination.
+RETURNS:        Returns 0 on normal program termination.
 
 NOTES:
-Main entry point into the program. Divides program functionality based on the 
-command-line arguments into client and server functionality. 
-
-Server will start when the Program is called with the 's' character.
-
-Client will start when the Program is called with the 'c' character.
+Main entry point into the program. Simply sets the sig_actions structure to
+catch any sig_int and uses the sig_handler function to deal with any issues.
+Afterwards, the Server function is called to run the program.
 ===============================================================================
 */
 int main(void);
@@ -139,18 +144,25 @@ INTERFACE:      int main (char *process)
 PARAMETERS:     Mesg* msg, 
                 int queue
 
-RETURNS:        -Returns -1 on failure to Open the client requested file.       
+RETURNS:        -Returns -1 on failure to Open the client requested file or
+                    it cannot send the final message.       
                 -Returns 0 if the file was opened and sent successfully.
 
 NOTES:
-Standard Notes go here. 
+This is where the child process created by the Search for Client function ends
+up. 
+
+This function parses the message data, attempts to open the file. If the
+file cannot open properly, it will send a message to the client indicated file
+open failure. Otherwise, the file's contents will be sent to the Client using
+the Packetize Data function.
 ===============================================================================
 */
 int ProcessClient(Mesg* msg, int queue);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       PacketizeData 
 
 DATE:           January 9, 2016
 
@@ -161,17 +173,35 @@ DESIGNER:       Tyler Trepanier-Bracken
 PROGRAMMER(S):  Tyler Trepanier-Bracken
                 Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int PacketizeData(FILE* fp,
+                  const int queue,
+                  const long msg_type,
+                  const int priority);
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     FILE* fp,
+                    File pointer to a previously opened file for reading.
+                const int queue,
+                    The message queue on which the server will write
+                    messages to.
+                const long msg_type,
+                    The message type of the client who will receive the
+                    series of messages.
+                const int priority);
+                    How urgent the clients wishes to receive the data. It is
+                    a number in between 1-1000.                    
 
 RETURNS:        -Returns the PID of process specified if the process
                 exists.          
                 -Returns 0 if the process was not found in the process table.
 
 NOTES:
-Standard Notes go here. 
+This function depends on a successfully opened file. This function performs
+the task of separting the contents of the file into packet sized blocks which
+will then be sent to the client using the given queue and message type. The 
+sending will continue until the end-of-file has been reached in the file.
+
+After a successful read or a ctrl-c is catched, the server will send the final
+message indicating that the reading is finished.
 ===============================================================================
 */
 int PacketizeData(FILE* fp,
@@ -181,7 +211,7 @@ int PacketizeData(FILE* fp,
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Designate Priority 
 
 DATE:           January 9, 2016
 
@@ -192,51 +222,39 @@ DESIGNER:       Tyler Trepanier-Bracken
 PROGRAMMER(S):  Tyler Trepanier-Bracken
                 Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      int DesignatePriority(const char* text,
+                      char* name,
+                      int* priority,
+                      pid_t* client)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     const char* text,
+                    File pointer to a previously opened file for reading.
+                char* name,
+                    The message queue on which the server will write
+                    messages to. This is the filename which is the first
+                    part of the message that is parsed.
+                int priority);
+                    How urgent the clients wishes to receive the data. This
+                    field is filled using the text's data.
+                pid_t* long client,
+                    The message type of the client who will receive the
+                    series of messages. This field is filled using the text's 
+                    data.
 
 RETURNS:        -Returns the PID of process specified if the process
                 exists.          
                 -Returns 0 if the process was not found in the process table.
 
 NOTES:
-Standard Notes go here. 
+Simple wrapper function that parses the text received by the client and
+extracts the name of the file, the designated priority and the client's PID
+(which will become the message type).
 ===============================================================================
 */
 int DesignatePriority(const char* text,
                       char* name,
                       int* priority,
                       pid_t* client);
-
-/*
-===============================================================================
-FUNCTION:       Main 
-
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
-
-INTERFACE:      int main (char *process)
-
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
-
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
-
-NOTES:
-Standard Notes go here. 
-===============================================================================
-*/
-void Cleanup(void);
 
 /*
 ===============================================================================
@@ -260,70 +278,3 @@ Searches for multiple clients and assigns each client a separate process.
 ===============================================================================
 */
 int SearchForClients(void);
-
-/*
-===============================================================================
-FUNCTION:       Server Help
-
-DATE:           Febuary 2, 2016            
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-
-INTERFACE:      void ServerHelp(void);
-
-PARAMETERS:     void
-
-NOTES:
-Displays a help message to standard output that displays how to use this
-Server application.
-===============================================================================
-*/
-void ServerHelp(void);
-
-/*
-===============================================================================
-FUNCTION:       Search For Clients 
-
-DATE:           January 30, 2016            
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-
-INTERFACE:      int SearchForClients(void)
-
-PARAMETERS:     void
-
-RETURNS:        -Returns 1 on improper termination.
-                -Returns 0 when the user gracefully terminates the reading.
-
-NOTES:
-Searches for multiple clients and assigns each client a separate process.
-===============================================================================
-*/
-void* Input(void* unused);
-
-/*
-===============================================================================
-FUNCTION:       Search For Clients 
-
-DATE:           January 30, 2016            
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-
-INTERFACE:      int SearchForClients(void)
-
-PARAMETERS:     void
-
-RETURNS:        -Returns 1 on improper termination.
-                -Returns 0 when the user gracefully terminates the reading.
-
-NOTES:
-Searches for multiple clients and assigns each client a separate process.
-===============================================================================
-*/
-int CreateInputThread(void);

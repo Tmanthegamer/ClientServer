@@ -22,18 +22,19 @@ DESIGNGER:      Tyler Trepanier-Bracken
 PROGRAMMER:     Tyler Trepanier-Bracken
 
 NOTES:
-Standard Notes go here.
+This is the message structure that contains all the necessary elements for a
+message to be sent on the linux message queue. This file is used by the Client,
+Server and Utilities files which use the MAXMESSAGEDATA definition to determine
+the priority.
 ===============================================================================
 */
 
  /* Maximum message size allowed on the message queue. */
 #define MAXMESSAGEDATA 	2048
 
-/* length of mesg_len and mesg_type */
-#define MESGHDRSIZE 	(sizeof(Mesg) - MAXMESGDATA)
-
 /*
-Mesg structure used to transfer messages between the client processes and server process
+Mesg structure used to transfer messages between the client processes and server 
+process
 */
 typedef struct
 {

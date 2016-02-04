@@ -1,15 +1,16 @@
 /* 
 ===============================================================================
-SOURCE FILE:    Client.h 
-                    Header file 
+SOURCE FILE:    Utilities.h 
+                    Header file for the shared functions of the Client and
+                    Server programs.
 
-PROGRAM:        Client
+PROGRAM:        Client / Server
 
-FUNCTIONS:      int main(void)
-                int Client(void)
-                int PromptUserInput(char* input)
-                int CreateReadThread(void)
-                void* ReadServerResponse(void *queue)
+FUNCTIONS:      int ReadMessage(int queue, Mesg* msg, long msg_type)
+                int SendMessage(int queue, Mesg* msg)
+                int SendFinalMessage(int queue, Mesg* msg)
+                int OpenQueue(void)
+                FILE* OpenFile(const char* fileName)
                 void sig_handler(int sig)
 
 
@@ -33,19 +34,9 @@ DESIGNGER:      Tyler Trepanier-Bracken
 PROGRAMMER:     Tyler Trepanier-Bracken
 
 NOTES:
-Client is a stand-alone program which allows the user to ask for files to read
-and displayed onto the stdout of this process. This client may have multiple
-instances at once and they work in unison with only one Server. 
-
-Each individual Client requests the user to enter in the filename and, if
-they so please, the priority and another client's process id. This request
-gets bundled into a message which gets sent to the server where the server
-processes this file opening request. Afterwards, the server responds which
-either an error message or the contents of the file.
-
-This is the main file that holds all of the unique functionality of the Client
-program. There are some shared functionality with the Server that is defined
-inside of the Utilities files.
+The Utilities filess do not perform any stand-alone function but instead
+provide both the Client and the Server similar functionality to the message
+queue. 
 ===============================================================================
 */
 
@@ -58,22 +49,20 @@ inside of the Utilities files.
 #include <signal.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
-#include <sys/wait.h>
 #include <sys/errno.h>
 #include "mesg.h"
 
-#define MSGPERM                 0644    // msg queue permission
-#define BUFF                    256
-#define ALL_MESSAGES            0
-#define CLIENT_TO_SERVER        100
-#define SERVER_TO_ALL_CLIENTS   200
+#define MSGPERM                 0644    // Message queue permissions
+#define BUFF                    256     // Small array of character buffer
+#define CLIENT_TO_SERVER        100     // Message type directed to the Server
 
 /* Global variables */
-int msgQueue; 
-int rc;
+int msgQueue;               // The message queue, used for signal handling
+int rc;                     // Error message handler.
 
-struct sigaction sa;
-struct sigaction oldint;
+struct sigaction sa;        // The new signal handler structure.
+struct sigaction oldint;    /* Old signal handler structure which will be 
+                                restored. */
 
 /*
 ===============================================================================
@@ -239,84 +228,58 @@ int OpenQueue(void);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       sig_handler 
 
 DATE:           January 9, 2016
 
-REVISIONS:      (Date and Description)
+REVISIONS:      January 30th, 2016      (Tyler Trepanier-Bracken)
+                    Repurposed from Aman's signal lab example.
 
-DESIGNER:       Tyler Trepanier-Bracken
+DESIGNER:       Aman Abdulla
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      void sig_handler(int sig)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     int sig
+                    The sent signal is caught here.
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        void
 
 NOTES:
-Standard Notes go here. 
+Each the Client and the Server both implement their own version of this
+function but the general purpose is the same. They both catch any available
+signals and terminate the program.
+
+The Server catches the SIGINT and sets the quit flag. This quit flag stops all
+reading, sends whatever is in its buffer to the Clients and sends a final
+message to its Client before terminating itself.
+
+The Client catches this SIGINT and simply flushes all output before restored
+normal signal action and exiting.
 ===============================================================================
 */
 void sig_handler(int sig);
 
 /*
 ===============================================================================
-FUNCTION:       Main 
+FUNCTION:       Open File 
 
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
+DATE:           January 28, 2016
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
 
-INTERFACE:      int main (char *process)
+INTERFACE:      FILE* OpenFile(const char* fileName)
 
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
+PARAMETERS:     const char* fileName
 
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
+RETURNS:        -Returns the null pointer if the file could not be opened
+                -Returns the file pointer if the file was opened successfully
 
 NOTES:
-Standard Notes go here. 
+Simple wrapper function that attempts to open a file for reading. 
 ===============================================================================
 */
 FILE* OpenFile(const char* fileName);
-
-/*
-===============================================================================
-FUNCTION:       Main 
-
-DATE:           January 9, 2016
-
-REVISIONS:      (Date and Description)
-
-DESIGNER:       Tyler Trepanier-Bracken
-
-PROGRAMMER(S):  Tyler Trepanier-Bracken
-                Harvey Dent
-
-INTERFACE:      int main (char *process)
-
-PARAMETERS:     char *process: 
-                    the name of the process to be validated. 
-
-RETURNS:        -Returns the PID of process specified if the process
-                exists.          
-                -Returns 0 if the process was not found in the process table.
-
-NOTES:
-Standard Notes go here. 
-===============================================================================
-*/
-int CheckQueue(void);

@@ -117,18 +117,3 @@ FILE* OpenFile(const char* fileName)
 
     return fp;
 }
-
-int CheckQueue(void)
-{
-    key_t key;
-
-    key = ftok("Info", 'a');
-
-    if (msgget(key, IPC_EXCL | IPC_CREAT | MSGPERM) < 0 &&
-        errno == EEXIST)
-    {
-        return -1;
-    }
-
-    return 0;
-}
