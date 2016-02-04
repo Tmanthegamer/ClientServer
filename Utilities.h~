@@ -71,9 +71,6 @@ inside of the Utilities files.
 int msgQueue; 
 int rc;
 
-struct sigaction sa;
-struct sigaction oldint;
-
 /*
 ===============================================================================
 FUNCTION:       Read Message 
@@ -180,6 +177,34 @@ CONFIRM a completed message.
 ===============================================================================
 */
 int SendFinalMessage(int queue, Mesg* msg);
+
+/*
+===============================================================================
+FUNCTION:       Main 
+
+DATE:           January 9, 2016
+
+REVISIONS:      (Date and Description)
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+                Harvey Dent
+
+INTERFACE:      int main (char *process)
+
+PARAMETERS:     char *process: 
+                    the name of the process to be validated. 
+s
+RETURNS:        -Returns the PID of process specified if the process
+                exists.          
+                -Returns 0 if the process was not found in the process table.
+
+NOTES:
+Standard Notes go here. 
+===============================================================================
+*/
+int ReadAllMessages(int queue, Mesg* msg, long msg_type);
 
 /*
 ===============================================================================

@@ -68,15 +68,10 @@ DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
-INTERFACE:      int main(int argc,
-                         char **argv)
+INTERFACE:      int main(void)
 
-PARAMETERS:     int argc,
-                    Number of command-line arguments. Used to verify the
-                    correctness of program calling.
-                char **argv
-                    Command-line arguments. Only second argument is taken
-                    into consideration for this program.
+PARAMETERS:     void
+
 RETURNS:        -Returns 1 on improper program exit.
                 -Returns 0 on normal program termination.
 
@@ -89,7 +84,7 @@ Server will start when the Program is called with the 's' character.
 Client will start when the Program is called with the 'c' character.
 ===============================================================================
 */
-int main(int argc,char **argv);
+int main(void);
 
 /*
 ===============================================================================

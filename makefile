@@ -1,4 +1,4 @@
-all: Server Client
+all: Clean Server Client
 
 Server: 
 	gcc -W -Wall -pthread -o Server Server.c Utilities.c

@@ -28,6 +28,10 @@ REVISIONS:      January 31, 2016        (Tyler Trepanier-Bracken)
                     Client has their own definitions of the sig_handler
                     with their own implementations.
 
+                Febuary 3, 2016         (Tyler Trepanier-Bracken)
+                    Removing Prompt User functionality and replacing it
+                    with  
+
 DESIGNGER:      Tyler Trepanier-Bracken
 
 PROGRAMMER:     Tyler Trepanier-Bracken
@@ -52,8 +56,7 @@ inside of the Utilities files.
 #include <pthread.h>
 #include "Utilities.h"
 
-int done, ready;
-int thread = 0;
+int done, running = 1;
 
 /*
 ===============================================================================
@@ -70,12 +73,20 @@ REVISIONS:      January 30, 2016    (Tyler Trepanier-Bracken)
                 Febuary 2, 2016     (Tyler Trepanier-Bracken)
                     Split this function into separate files: Client and 
                     Server.
+                Febuary 3, 2016     (Tyler Trepanier-Bracken)
+                    Removing user input functionality on all ends and instead
+                    parsing command-line arguments.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
 INTERFACE:      int main(void)
+
+PARAMETERS:     int argc 
+                    The number of arguments received from command-line.
+                char** argv
+                    The arguments received from the command-line to be parsed.
 
 RETURNS:        -Returns 1 on improper program exit.
                 -Returns 0 on normal program termination.
@@ -85,7 +96,7 @@ Main entry point into the program. Divides program functionality based on the
 command-line arguments into client and server functionality. 
 ===============================================================================
 */
-int main(void);
+int main(int argc, char** argv);
 
 /*
 ===============================================================================
@@ -95,14 +106,20 @@ DATE:           January 30, 2016
 
 REVISIONS:      Febuary 1, 2016 (Tyler Trepanier-Bracken)
                     Implemented threads to read from a server.
+                Febuary 3, 2016     (Tyler Trepanier-Bracken)
+                    Removing user input functionality on all ends and instead
+                    parsing command-line arguments.
 
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
-INTERFACE:      int Client(void)
+INTERFACE:      int Client(int argc, char** argv)
 
-PARAMETERS:     void
+PARAMETERS:     int argc 
+                    The number of arguments received from command-line.
+                char** argv
+                    The arguments received from the command-line to be parsed.
 
 RETURNS:        -Returns 1 if the Client was unable to open a message queue.
                 -Returns 0 on proper program termination
@@ -121,7 +138,7 @@ The program will continually asked for user input until user enters "quit"
 or ctrl-c has been hit.
 ===============================================================================
 */
-int Client(void);
+int Client(int argc, char** argv);
 
 /*
 ===============================================================================
@@ -152,7 +169,7 @@ void* ReadServerResponse(void *queue);
 
 /*
 ===============================================================================
-FUNCTION:       Prompt User Input
+FUNCTION:       Read Arguments
 
 DATE:           January 31, 2016
 
@@ -160,31 +177,34 @@ REVISIONS:      Febuary 2, 2016 (Tyler Trepanier-Bracken)
                     Implemented help messages and normal termination via 
                     requesting a program quit.
 
+                Febuary 3, 2016 (Tyler Trepanier-Bracken)
+                    Repurposed this Prompt User Input (this function) to 
+                    parsing command-line arguments.
+
 DESIGNER:       Tyler Trepanier-Bracken
 
 PROGRAMMER(S):  Tyler Trepanier-Bracken
 
-INTERFACE:      int PromptUserInput(char* input)
+INTERFACE:      int ReadArguments(int argc, char** argv)
 
-PARAMETERS:     char *input
-                    The buffer which will be written onto. This will hold
-                    the client's pid, priority and the filename when the user
-                    succesfully inputs the required information.
+PARAMETERS:     char* request
+                    The field which will be populated with the user's
+                    request and message arguments.
+                int argc 
+                    The number of arguments received from command-line.
+                char** argv
+                    The arguments received from the command-line to be parsed.
 
-RETURNS:        -Returns -1 on a quit request
+RETURNS:        -Returns -1 on a improper argument formatting.
                 -Returns 0 on succesful user input
-                -Returns 1 on help message requested.
 
 NOTES:
-This function grabs filenames from stdin (user input). In addition, the user
-is prompted to add in priority or even a client's process ID.
-
-When first prompted with filename request, the user has the ability to quit
-the application by entering "quit". The user can also request on how to use
-the application by entering "help".
+This function grabs filenames from the command-line. Whenever there are no
+arguments when the program is instiated, this program will display the usage
+instructions on how this program operates and terminates.
 ===============================================================================
 */
-int PromptUserInput(char* input);
+int ReadArguments(char* request, int argc, char** argv);
 
 /*
 ===============================================================================

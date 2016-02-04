@@ -7,7 +7,7 @@ PROGRAM:        Client
 
 FUNCTIONS:      int main(void)
                 int Client(void);
-                int PromptUserInput(char* input)
+                int ReadArguments(char* request, int argc, char** argv)
                 int CreateReadThread(void);
                 void* ReadServerResponse(void *queue);
                 void sig_handler(int sig)
@@ -51,13 +51,10 @@ The sig_handler is defined in this file to account for the detached pthread.
 ===============================================================================
 */
 
-
 #include "Client.h"
 
-int main(void)
+int main(int argc, char** argv)
 {
-    struct sigaction sa;
-    struct sigaction oldint;
 
     sa.sa_handler = sig_handler;
     sigemptyset (&sa.sa_mask);
@@ -66,7 +63,7 @@ int main(void)
     sigaction (SIGINT, &sa, &oldint);
     sigaction (SIGTSTP, &sa, NULL);
 
-    Client();
+    Client(argc, argv);
 
     // Restore normal action
     sigaction (SIGINT, &oldint, NULL);
@@ -74,7 +71,7 @@ int main(void)
     return 0;
 }
 
-int Client(void)
+int Client(int argc, char** argv)
 {
     long type = CLIENT_TO_SERVER;
     char request[BUFF];
@@ -90,15 +87,14 @@ int Client(void)
     if(CreateReadThread() < 0)
         return -1;
 
-    while (1)
+    while (running)
     {
         if(done) {
-            ready = 1;
-            rc = PromptUserInput(request);
+
+            rc = ReadArguments(request, argc, argv);
             if(rc < 0)
             {
                 printf("Exiting...\n");
-                thread = 0;
                 return 0;
             } 
             else if(rc == 1)
@@ -116,26 +112,11 @@ int Client(void)
               perror( strerror(errno) );
               return -1;
             }
-            
-            printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
+            printf("hit5:%d\n", running);
+            //printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
         }
         
     }
-    
-
-    /*
-    printf("%s\n", "Waiting for server...");
-    while(1)
-    {
-        if(ReadMessage(msgQueue, &rcv, getpid()) == 0){
-            if(rcv.mesg_len == 0) {
-                break;
-            }
-            //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
-            printf("%s", rcv.mesg_data);
-        }
-    }
-    printf("Finished reading server response.\n");*/
 
     return 0;
 }
@@ -157,46 +138,45 @@ int CreateReadThread(void)
     return 0;
 }
 
-int PromptUserInput(char* input)
+int ReadArguments(char* request, int argc, char** argv)
 {
-    int len;
-    int priority = 1;
-    int client;
+    int priority;
+    int client = getpid();
 
     char name[BUFF];
 
-    printf("Please enter: [filename]\n");
-    
-    while((fgets(name, BUFF-1, stdin)) == NULL)
+    //Command line usage: ./Client [filename] [priority]
+    if(argc >= 2)
     {
-        printf("Type \"help\" for instructions");
-    }
+        if(sscanf(argv[1], "%s", name) != 1)
+        {
+            ClientHelp();
+            return -1;
+        }
 
-    if(strstr(name, "quit") != 0)
+        if(argc == 2 || sscanf(argv[2], "%d", &priority) != 1)
+        {
+            priority = 1;
+        }
+
+    } 
+    else
     {
+        ClientHelp();
         return -1;
-    } else if(strstr(name, "help"))
-    {
-        ClientHelp(); // Display application usage and restart this function.
-        return 1;
-
     }
 
-    printf("(Optional) Please enter: [priority]\n");
-    fgets(input, BUFF-1, stdin);
-    if(sscanf(input, "%d", &priority) != 1)
+    //The priority can only be in between 1 and 1000.
+    if(priority < 1)
     {
         priority = 1;
-    }
-
-    printf("(Optional) Please enter: [Client Process ID]\n");
-    fgets(input, BUFF-1, stdin);
-    if(sscanf(input, "%d", &client) != 1)
+    } 
+    else if(priority > 1000)
     {
-        client = getpid();
+        priority = 1000;
     }
 
-    sprintf(input, "%s %d %d", name, priority, client);
+    sprintf(request, "%s %d %d", name, priority, client);
 
     return 0;
 }
@@ -206,57 +186,37 @@ void* ReadServerResponse(void* msgQueue)
     Mesg rcv;
     rcv.mesg_len = 0;
 
-    while(thread)
+    while(1)
     {
-        while(ready)
-        {
-            if(ReadMessage((*(int*)msgQueue), &rcv, getpid()) == 0){
-                if(rcv.mesg_len == 0) {
-                    break;
-                }
-                //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
-                printf("%s", rcv.mesg_data);
+        if(ReadMessage((*(int*)msgQueue), &rcv, getpid()) == 0){
+            if(rcv.mesg_len == 0) {
+
+                break;
             }
+            //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+            printf("%s", rcv.mesg_data);
         }
-        printf("Finished reading server response.\n");
-        done = 1;
-        ready = 0;
     }
+
+    running = 0;
 
     return 0;
 }
 
 void ClientHelp(void)
 {
-    printf("\n===================================================\n");
-    printf("               CLIENT PROGRAM USAGE                \n");
-    printf("===================================================\n\n");
-    printf("{This client's PID is: %d                         }\n", getpid());
-    printf("Enter the: [filename]                            \n");
-    printf("     (a)Wait for the Server to respond with the  \n");
-    printf("        desired file contents.                 \n\n");
-    printf("You have two optional options when inputing a    \n");
-    printf("filename:                                        \n");
-    printf("      [Priority]                                 \n");
-    printf("          Changes the speed of message retrieval \n\n");
-    printf("      [Client process ID]                        \n");
-    printf("          Designates a process (that is currently\n");
-    printf("          running this application) which will   \n");
-    printf("          receive a file's contents.             \n\n");
-    printf("You can close this application by entering \"quit\". \n\n")
-    printf("Enter in \"help\"to to see this message again.   \n");
-    printf("=================================================\n");
+    printf("Usage: [Filename] [Priority].\n");
+    printf("Please note that priority is optional.\n");
 }
 
 /* Simple signal handler */
 void sig_handler(int sig)
 {
-    thread = 0;
     if(sig){
 
     }
-    
-    RemoveQueue(msgQueue);
+
+    sigaction (SIGINT, &oldint, NULL);
     fflush(stdout);
 
     exit(1);

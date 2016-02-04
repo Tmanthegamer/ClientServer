@@ -31,18 +31,10 @@ Standard Notes go here.
 
 extern int errno;       // error NO.
 int quit = 0;
-/*
-    TODO: 
-    -Extract ProcessInput from the LinuxTerminal for user input
-    -Use that Process Input to allow the user to exit the application
-    -Fill in the Cleanup function.
-*/
 
-int main(int argc, char **argv)
+int main(void)
 {
-    struct sigaction sa;
-  	struct sigaction oldint;
-
+    
     sa.sa_handler = sig_handler;
   	sigemptyset (&sa.sa_mask);
   	sa.sa_flags = 0;
@@ -78,31 +70,14 @@ int Server(void)
 
 int SearchForClients(void)
 {
-    #if 0
-    Mesg snd;
-
-    strcpy(snd.mesg_data, "nope5 10");
-    snd.mesg_type = CLIENT_TO_SERVER;
-
-    if(SendMessage(msgQueue, &snd) < 0)
-    {
-      printf("SendMessage\n");
-      //RemoveQueue(msgQueue);
-      return 1;
-    }
-    printf("[SEND: len=%zu]\n", snd.mesg_len);
-    #endif
-
     Mesg rcv;
 
     while (!quit){
         if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
         {
-
-            //mesg_len doesn't work
-            printf("normal:[msg:%s][len:%zu][type:%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
             pid_t child;
             child = fork();
+
             switch(child)
             {
             case -1:
@@ -141,24 +116,25 @@ int ProcessClient(Mesg* msg, int queue)
     pid_t client;
     int priority;
 
-    printf("ProcessClient\n");
     if(DesignatePriority(msg->mesg_data, name, &priority, &client) < 0)
     {
-        printf("error");
+        printf("Fatal error, cannot read message.");
+        return -1;
     }
 
-    printf("Opening file.\n");
     if((file = OpenFile(name)) == NULL)
     {
         msg->mesg_type = client;
         sprintf(msg->mesg_data, "Cannot open file: %s\n", name);
        if(SendMessage(queue, msg) < 0){
-            
+            perror("Unable to send message");
+            return -1;
         }
 
         if(SendFinalMessage(queue, msg) < 0)
         {
-            printf("Can't print final message.\n");
+            printf("Can't send final message.\n");
+            return -1;
         }
 
         /*
@@ -166,10 +142,11 @@ int ProcessClient(Mesg* msg, int queue)
             Send “Error: Cannot open file” message to SEND MESSAGE
             Goto SEND MESSAGE
         */
-        return -1;
+        return 0;
     }
     else
     {
+        printf("Sending %s to client:%d\n", name, client);
         PacketizeData(file, queue, (long)client, priority);
     }
 
@@ -191,12 +168,8 @@ int DesignatePriority(const char* text,
 {
 
     int n = sscanf(text, "%s %d %d", name, priority, client);
-
-    if(n == 2){
-        *client = SERVER_TO_ALL_CLIENTS;
-        return 0;
-    }
-    else if (n == 3)
+    
+    if (n == 3)
     {
         return 1;
     }
@@ -211,8 +184,6 @@ int PacketizeData(FILE* fp,
 {
     Mesg snd;
     int m_size = MAXMESSAGEDATA;
-    int count = 0;
-
 
     if (priority < 0)
         m_size = MAXMESSAGEDATA;
@@ -225,8 +196,6 @@ int PacketizeData(FILE* fp,
 
     snd.mesg_type = msg_type;
     // Priority is organized by dividing the message by its priority number.
-    printf("PacketizeData.\n");
-    printf("[m_size:%d]", m_size);
 
     //don't use fgets, copy each char individually until the limit is filled.
     while(fgets(buf, m_size, fp) != NULL)
@@ -236,21 +205,13 @@ int PacketizeData(FILE* fp,
         if(SendMessage(queue, &snd) < 0){
             printf("Error in PacketizeData, SendMessage fail\n");
         }
-
-        //printf("<Portion: %d>\n\n%s", count++, buf);
-        /*
-        Send the portion of the message to SEND MESSAGES
-        Send the PID to SEND MESSAGES
-        Send the Message Queue to SEND MESSAGES
-        Send the “more” flag to SEND MESSAGES
-        Goto SEND MESSAGES
-        Restart loop
-        */
     }
-    printf("Done, sending final message\n");
+
+
     if(SendFinalMessage(queue, &snd) < 0){
         printf("Error in ending msg, SendMessage fail\n");
     }
+    printf("Sending to %ld complete...\n", msg_type);
     fclose(fp);
 
     return 0;
@@ -277,7 +238,7 @@ void* Input(void* unused)
 	char message;
 
 	printf("You can press 'h' at anytime for this program's usage.");
-	while((message = fgetc(stdin)) != NULL)
+	while((message = fgetc(stdin)) != EOF)
 	{
 		if(message == 'h')
 			ServerHelp();
@@ -288,23 +249,6 @@ void* Input(void* unused)
 		}
 			
 	}
-
-}
-
-int CreateInputThread(void)
-{
-
-    pthread_attr_t detach_attr;
-    pthread_t thread;
-
-    pthread_attr_init(&detach_attr);
-    pthread_attr_setdetachstate(&detach_attr, PTHREAD_CREATE_DETACHED);
-    rc = pthread_create(&thread, &detach_attr, ReadServerResponse, (void*)0);
-
-    if(rc != 0)
-    {
-        return -1;
-    }
     return 0;
 }
 
