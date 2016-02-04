@@ -27,7 +27,7 @@ Standard Notes go here.
 */
 
  /* Maximum message size allowed on the message queue. */
-#define MAXMESSAGEDATA 	(4096-16)
+#define MAXMESSAGEDATA 	2048
 
 /* length of mesg_len and mesg_type */
 #define MESGHDRSIZE 	(sizeof(Mesg) - MAXMESGDATA)

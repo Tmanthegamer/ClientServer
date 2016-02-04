@@ -29,6 +29,8 @@ Standard Notes go here.
 */
 #include "Server.h"
 
+Mesg* kill_client_msg;
+
 extern int errno;       // error NO.
 int quit = 0;
 
@@ -36,11 +38,11 @@ int main(void)
 {
     
     sa.sa_handler = sig_handler;
-  	sigemptyset (&sa.sa_mask);
-  	sa.sa_flags = 0;
+    sigemptyset (&sa.sa_mask);
+    sa.sa_flags = 0;
 
     sigaction (SIGINT, &sa, &oldint);
-  	sigaction (SIGTSTP, &sa, NULL);
+    sigaction (SIGTSTP, &sa, NULL);
 
     Server();
 
@@ -56,15 +58,9 @@ int Server(void)
     if(OpenQueue() < 0)
         return 1;
 
-    //Insert ProcessInput functional inside here.
     SearchForClients();
 
     RemoveQueue(msgQueue);
-    /*
-    Create ClientServer msg queue
-    Assign Message-Type 1 to be the messages designated Client to Server
-    Goto SEARCH FOR CLIENTS
-    */
     return 0;
 }
 
@@ -72,25 +68,28 @@ int SearchForClients(void)
 {
     Mesg rcv;
 
+    rcv.mesg_type = CLIENT_TO_SERVER;
+    sprintf(rcv.mesg_data, "   ");
+    kill_client_msg = &rcv;
+
     while (!quit){
         if(ReadMessage(msgQueue, &rcv, CLIENT_TO_SERVER) == 0)
         {
             pid_t child;
             child = fork();
-
+            
             switch(child)
             {
             case -1:
                 printf("Fatal error.\n");
                 break;
             case 0: //child
-
+                kill_client_msg = &rcv;
                 ProcessClient(&rcv, msgQueue);
                 exit(1);
                 break;
 
             default: //parent
-                //No action to be taken for the parent
                 break;
             }
 
@@ -98,14 +97,6 @@ int SearchForClients(void)
 
     }
 
-
-    printf("Killed SearchForClients.\n");
-    /*
-    Check for any incoming messages from clients.
-    Failure no new messages: RESTART SEARCH FOR CLIENTS
-    Pass message to CREATE NEW CLIENT PROCESS.
-    Goto CREATE NEW CLIENT PROCESS
-    */
     return 0;
 }
 
@@ -137,11 +128,6 @@ int ProcessClient(Mesg* msg, int queue)
             return -1;
         }
 
-        /*
-        Failure: File cannot be opened for reading
-            Send “Error: Cannot open file” message to SEND MESSAGE
-            Goto SEND MESSAGE
-        */
         return 0;
     }
     else
@@ -149,12 +135,6 @@ int ProcessClient(Mesg* msg, int queue)
         printf("Sending %s to client:%d\n", name, client);
         PacketizeData(file, queue, (long)client, priority);
     }
-
-    /*
-    Grab received message
-    Get Client’s Priority and PID
-    Goto OPEN REQUESTED FILE
-    */
 
     return 0;
 }
@@ -183,10 +163,11 @@ int PacketizeData(FILE* fp,
                   const int priority)
 {
     Mesg snd;
-    int m_size = MAXMESSAGEDATA;
+    int m_size = MAXMESSAGEDATA-1;
+    size_t i;
 
     if (priority < 0)
-        m_size = MAXMESSAGEDATA;
+        m_size = MAXMESSAGEDATA-1;
     else if (priority > 1000)
         m_size = MAXMESSAGEDATA / 1000;
     else
@@ -197,21 +178,30 @@ int PacketizeData(FILE* fp,
     snd.mesg_type = msg_type;
     // Priority is organized by dividing the message by its priority number.
 
-    //don't use fgets, copy each char individually until the limit is filled.
-    while(fgets(buf, m_size, fp) != NULL)
+    while((i = fread(buf, sizeof(char), (sizeof(buf)/sizeof(char)) -1, fp)))
     {
+        buf[i] = '\0';
         strcpy(snd.mesg_data, buf);
 
         if(SendMessage(queue, &snd) < 0){
             printf("Error in PacketizeData, SendMessage fail\n");
         }
+
+    }
+    
+    if(feof(fp))
+    {
+        printf("Sending to %ld complete...\n", msg_type);
+    }
+    else
+    {
+        printf("Internal file error\n");
     }
 
 
     if(SendFinalMessage(queue, &snd) < 0){
         printf("Error in ending msg, SendMessage fail\n");
     }
-    printf("Sending to %ld complete...\n", msg_type);
     fclose(fp);
 
     return 0;
@@ -222,47 +212,15 @@ void Cleanup(void)
 
 }
 
-void ServerHelp(void)
-{
-    printf("\n==================================================\n");
-    printf("               SERVER PROGRAM USAGE                \n");
-    printf("==================================================\n\n");
-    printf("This application requires no user input to run   \n");
-    printf("however you can close the server at anytime by   \n");
-    printf("pressing the 'q' key on your keyboard or ctrl-c. \n");
-    printf("=================================================\n");
-}
-
-void* Input(void* unused)
-{
-	char message;
-
-	printf("You can press 'h' at anytime for this program's usage.");
-	while((message = fgetc(stdin)) != EOF)
-	{
-		if(message == 'h')
-			ServerHelp();
-		else if(message == 'q')
-		{
-			quit = 1;
-			break;
-		}
-			
-	}
-    return 0;
-}
-
 /* Simple signal handler */
 void sig_handler(int sig)
 {
+
     if(sig){
 
     }
+        
+    quit = 1;
     RemoveQueue(msgQueue);
-    fflush(stdout);
-    /*
-    ADD IN MORE CLEAN UP DUTIES HERE.
-    */
-
     exit(1);
 }

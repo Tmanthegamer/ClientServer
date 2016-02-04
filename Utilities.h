@@ -64,6 +64,7 @@ inside of the Utilities files.
 
 #define MSGPERM                 0644    // msg queue permission
 #define BUFF                    256
+#define ALL_MESSAGES            0
 #define CLIENT_TO_SERVER        100
 #define SERVER_TO_ALL_CLIENTS   200
 
@@ -291,3 +292,31 @@ Standard Notes go here.
 ===============================================================================
 */
 FILE* OpenFile(const char* fileName);
+
+/*
+===============================================================================
+FUNCTION:       Main 
+
+DATE:           January 9, 2016
+
+REVISIONS:      (Date and Description)
+
+DESIGNER:       Tyler Trepanier-Bracken
+
+PROGRAMMER(S):  Tyler Trepanier-Bracken
+                Harvey Dent
+
+INTERFACE:      int main (char *process)
+
+PARAMETERS:     char *process: 
+                    the name of the process to be validated. 
+
+RETURNS:        -Returns the PID of process specified if the process
+                exists.          
+                -Returns 0 if the process was not found in the process table.
+
+NOTES:
+Standard Notes go here. 
+===============================================================================
+*/
+int CheckQueue(void);

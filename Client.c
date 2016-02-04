@@ -94,26 +94,27 @@ int Client(int argc, char** argv)
             rc = ReadArguments(request, argc, argv);
             if(rc < 0)
             {
-                printf("Exiting...\n");
+
                 return 0;
             } 
             else if(rc == 1)
             {
+
                 continue;
             }
 
             done = 0;
 
             strncpy(snd.mesg_data, request, BUFF);
-            
+
             snd.mesg_type = type;
             if(SendMessage(msgQueue, &snd) < 0)
             {
+
               perror( strerror(errno) );
               return -1;
             }
-            printf("hit5:%d\n", running);
-            //printf("[%s][%zu][%ld]\n", snd.mesg_data, snd.mesg_len, snd.mesg_type);
+
         }
         
     }
@@ -187,15 +188,18 @@ void* ReadServerResponse(void* msgQueue)
     rcv.mesg_len = 0;
 
     while(1)
-    {
+    {     
+
+        fflush(stdout);
+
         if(ReadMessage((*(int*)msgQueue), &rcv, getpid()) == 0){
             if(rcv.mesg_len == 0) {
-
                 break;
             }
-            //printf("[%s][%d][%ld]\n", rcv.mesg_data, rcv.mesg_len, rcv.mesg_type);
+            
             printf("%s", rcv.mesg_data);
         }
+
     }
 
     running = 0;
