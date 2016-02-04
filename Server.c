@@ -217,20 +217,10 @@ int PacketizeData(FILE* fp,
         }
 
     }
-    
-    if(feof(fp))
-    {
-        printf("Sending to %ld complete...\n", msg_type);
-    }
-    else
-    {
-        printf("Internal file error\n");
-    }
+    printf("Sending to %ld complete...\n", msg_type);
 
-
-    if(SendFinalMessage(queue, &snd) < 0){
+    SendFinalMessage(queue, &snd) < 0);
         
-    }
     fclose(fp);
 
     return 0;
